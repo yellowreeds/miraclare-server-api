@@ -35,6 +35,35 @@ app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
 
+// Define a route for user login using a POST request with form data
+app.post('/api/customers/login', upload.fields([
+  { name: 'username', maxCount: 1 },
+  { name: 'password', maxCount: 1 }
+]), (req, res) => {
+  const { username, password } = req.body; // Assuming username and password are sent as form fields
+
+  // Perform a SQL query to check if the user exists and the password is correct
+  const sql = 'SELECT * FROM customer WHERE cust_username = ? AND cust_password = ?';
+  const values = [username, password];
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (results.length === 1) {
+      // User exists and password is correct
+      res.status(200).json({ message: 'OK' });
+    } else {
+      // User does not exist or password is incorrect
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+  });
+});
+
+// Define a route to retrieve customer data
 app.get('/api/customers', (req, res) => {
   db.query('SELECT * FROM customer', (err, results) => {
     if (err) {
@@ -47,6 +76,7 @@ app.get('/api/customers', (req, res) => {
   });
 });
 
+// Define a route to add a new customer
 app.post('/api/customers/add', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'cust_password', maxCount: 1 },

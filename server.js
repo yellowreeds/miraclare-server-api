@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'root',
+  password: '',
   database: 'miraclare'
 });
 
@@ -28,6 +28,11 @@ db.connect((err) => {
     return;
   }
   console.log('Connected to MariaDB');
+});
+
+// Define a route to display "Hello, world!" when accessing the root URL
+app.get('/', (req, res) => {
+  res.send('Hello, world!');
 });
 
 app.get('/api/customers', (req, res) => {

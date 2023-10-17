@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/customers', (req, res) => {
-  db.query('SELECT `cust_name` FROM customer', (err, results) => {
+  db.query('SELECT * FROM customer', (err, results) => {
     if (err) {
       console.error('Error executing SQL query:', err);
       res.status(500).json({ error: 'Internal Server Error' });

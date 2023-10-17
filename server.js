@@ -71,7 +71,6 @@ app.get('/api/customers', (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
       return;
     }
-    console.log(results);
     res.json(results);
   });
 });

@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const mysql = require('mysql2');
-const multer = require('multer');
+const multer = require('multer'); // Add multer
 const bodyParser = require('body-parser');
 
 const app = express();
@@ -10,15 +10,15 @@ app.set('view engine', 'ejs');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-app.use(bodyParser.urlencoded({ extended: true })); // Add URL-encoded body parsing middleware
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Create a database connection
 const db = mysql.createConnection({
-  host: 'localhost', // Replace with your MariaDB host
-  user: 'root', // Replace with your MariaDB username
-  password: 'root', // Replace with your MariaDB password
-  database: 'miraclare' // Replace with the name of your MariaDB database
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'miraclare'
 });
 
 // Connect to the database
@@ -30,7 +30,18 @@ db.connect((err) => {
   console.log('Connected to MariaDB');
 });
 
-// Define a route to add customer data with form-data
+app.get('/api/customers', (req, res) => {
+  db.query('SELECT `cust_name` FROM customer', (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+    console.log(results);
+    res.json(results);
+  });
+});
+
 app.post('/api/customers/add', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'cust_password', maxCount: 1 },
@@ -58,7 +69,6 @@ app.post('/api/customers/add', upload.fields([
     cust_id
   } = req.body;
 
-  // Perform a SQL query to insert data into the "customer" table
   const sql = `
     INSERT INTO customer (
       cust_username,
@@ -89,7 +99,6 @@ app.post('/api/customers/add', upload.fields([
     cust_id
   ];
 
-  // Perform the SQL query with the provided data
   db.query(sql, values, (err, results) => {
     if (err) {
       console.error('Error executing SQL query:', err);
@@ -97,7 +106,6 @@ app.post('/api/customers/add', upload.fields([
       return;
     }
 
-    // Send a success response
     res.status(201).json({ message: 'Customer added successfully' });
   });
 });

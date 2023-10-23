@@ -145,6 +145,31 @@ app.post('/api/customers/survey', upload.fields([
   });
 });
 
+app.post('/api/customers/logout', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+  { name: 'ipAddress', maxCount: 1 },
+]), (req, res) => {
+  const { cust_username, ipAddress } = req.body;
+  const logData = {
+    cust_username: cust_username,
+    log_status: 0,
+    log_ipadd: ipAddress,
+    log_access_date: new Date().toISOString().slice(0, 10)
+  };
+
+  const insertSql = 'INSERT INTO log_history SET ?';
+  db.query(insertSql, logData, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    res.status(201).json({ message: 'OK' });
+  });
+
+})
+
 
 app.post('/api/customers/login', upload.fields([
   { name: 'username', maxCount: 1 },

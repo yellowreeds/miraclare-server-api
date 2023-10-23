@@ -13,7 +13,6 @@ const upload = multer({ storage });
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Create a database connection
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
@@ -21,7 +20,6 @@ const db = mysql.createConnection({
   database: 'miraclare'
 });
 
-// Connect to the database
 db.connect((err) => {
   if (err) {
     console.error('Error connecting to MariaDB:', err);
@@ -30,21 +28,133 @@ db.connect((err) => {
   console.log('Connected to MariaDB');
 });
 
-// Define a route to display "Hello, world!" when accessing the root URL
 app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
 
-// Define a route for user login using a POST request with form data
+app.post('/api/customers/survey', upload.fields([
+  { name: 'sur_id', maxCount: 1 },
+  { name: 'sur_height', maxCount: 1 },
+  { name: 'sur_weight', maxCount: 1 },
+  { name: 'sur_split_ext', maxCount: 1 },
+  { name: 'sur_botox_trt', maxCount: 1 },
+  { name: 'sur_sleep_disd', maxCount: 1 },
+  { name: 'sur_dur_brx', maxCount: 1 },
+  { name: 'sur_pain_area', maxCount: 1 },
+  { name: 'sur_sick_tzone', maxCount: 1 },
+  { name: 'sur_pain_lvl', maxCount: 1 },
+  { name: 'sur_apr_obs', maxCount: 1 },
+  { name: 'sur_jaw_jmg', maxCount: 1 },
+  { name: 'sur_fc_asmy', maxCount: 1 },
+  { name: 'sur_headache', maxCount: 1 },
+  { name: 'sur_chr_ftg', maxCount: 1 },
+  { name: 'sur_pain_ttgm', maxCount: 1 },
+  { name: 'sur_tth_hysn', maxCount: 1 },
+  { name: 'sur_strs_lvl', maxCount: 1 },
+  { name: 'sur_smkg', maxCount: 1 },
+  { name: 'sur_drnk', maxCount: 1 },
+  { name: 'sur_ent_date', maxCount: 1 },
+  { name: 'cust_id', maxCount: 1 }
+]), (req, res) => {
+  const {
+    sur_id,
+    sur_height,
+    sur_weight,
+    sur_split_ext,
+    sur_botox_trt,
+    sur_sleep_disd,
+    sur_dur_brx,
+    sur_pain_area,
+    sur_sick_tzone,
+    sur_pain_lvl,
+    sur_apr_obs,
+    sur_jaw_jmg,
+    sur_fc_asmy,
+    sur_headache,
+    sur_chr_ftg,
+    sur_pain_ttgm,
+    sur_tth_hysn,
+    sur_strs_lvl,
+    sur_smkg,
+    sur_drnk,
+    sur_ent_date,
+    cust_id
+  } = req.body;
+
+  // Perform an SQL query to insert the survey data into the "survey_results" table
+  const sql = `
+    INSERT INTO survey_results (
+      sur_id,
+      sur_height,
+      sur_weight,
+      sur_split_ext,
+      sur_botox_trt,
+      sur_sleep_disd,
+      sur_dur_brx,
+      sur_pain_area,
+      sur_sick_tzone,
+      sur_pain_lvl,
+      sur_apr_obs,
+      sur_jaw_jmg,
+      sur_fc_asmy,
+      sur_headache,
+      sur_chr_ftg,
+      sur_pain_ttgm,
+      sur_tth_hysn,
+      sur_strs_lvl,
+      sur_smkg,
+      sur_drnk,
+      sur_ent_date,
+      cust_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    sur_id,
+    sur_height,
+    sur_weight,
+    sur_split_ext,
+    sur_botox_trt,
+    sur_sleep_disd,
+    sur_dur_brx,
+    sur_pain_area,
+    sur_sick_tzone,
+    sur_pain_lvl,
+    sur_apr_obs,
+    sur_jaw_jmg,
+    sur_fc_asmy,
+    sur_headache,
+    sur_chr_ftg,
+    sur_pain_ttgm,
+    sur_tth_hysn,
+    sur_strs_lvl,
+    sur_smkg,
+    sur_drnk,
+    sur_ent_date,
+    cust_id
+  ];
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    res.status(201).json({ message: 'Survey data saved successfully' });
+  });
+});
+
+
 app.post('/api/customers/login', upload.fields([
   { name: 'username', maxCount: 1 },
-  { name: 'password', maxCount: 1 }
+  { name: 'password', maxCount: 1 },
+  { name: 'ipAddress', maxCount: 1 }
 ]), (req, res) => {
-  const { username, password } = req.body; // Assuming username and password are sent as form fields
+  const { username, password, ipAddress } = req.body;
 
-  // Perform a SQL query to check if the user exists and the password is correct
-  const sql = 'SELECT * FROM customer WHERE cust_username = ? AND cust_password = ?';
-  const values = [username, password];
+  const sql = 'SELECT * FROM customers WHERE cust_username = ? AND cust_password = ?';
+  const values = [username, password, ipAddress];
 
   db.query(sql, values, (err, results) => {
     if (err) {
@@ -54,18 +164,35 @@ app.post('/api/customers/login', upload.fields([
     }
 
     if (results.length === 1) {
-      // User exists and password is correct
-      res.status(200).json({ message: 'OK' });
+      const logData = {
+        cust_username: results[0].cust_username,
+        log_status: 1,
+        log_ipadd: ipAddress,
+        log_access_date: new Date().toISOString().slice(0, 10)
+      };
+
+      const insertSql = 'INSERT INTO log_history SET ?';
+
+      db.query(insertSql, logData, (insertErr) => {
+        if (insertErr) {
+          console.error('Error inserting data into the table:', insertErr);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          res.status(200).json({ message: 'OK' });
+        }
+      });
     } else {
-      // User does not exist or password is incorrect
       res.status(401).json({ error: 'Unauthorized' });
     }
   });
 });
 
+
+
+
 // Define a route to retrieve customer data
 app.get('/api/customers', (req, res) => {
-  db.query('SELECT * FROM customer', (err, results) => {
+  db.query('SELECT * FROM customers', (err, results) => {
     if (err) {
       console.error('Error executing SQL query:', err);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -75,8 +202,7 @@ app.get('/api/customers', (req, res) => {
   });
 });
 
-// Define a route to add a new customer
-app.post('/api/customers/add', upload.fields([
+app.post('/api/customers/register', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'cust_password', maxCount: 1 },
   { name: 'cust_name', maxCount: 1 },
@@ -100,11 +226,37 @@ app.post('/api/customers/add', upload.fields([
     cust_detail_address,
     prod_registration_key,
     cust_join_date,
-    cust_id
   } = req.body;
 
-  const sql = `
-    INSERT INTO customer (
+  // First, query to get the count of existing data
+  const countQuery = 'SELECT COUNT(*) AS count FROM customers';
+
+  db.query(countQuery, (countErr, countResult) => {
+    if (countErr) {
+      console.error('Error executing count SQL query:', countErr);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+    const existingDataCount = (countResult[0].count) + 1;
+    const nextCustId = generateCustId(existingDataCount);
+    const insertQuery = `
+      INSERT INTO customers (
+        cust_id,
+        cust_username,
+        cust_password,
+        cust_name,
+        cust_dob,
+        cust_email,
+        cust_phone_num,
+        cust_address,
+        cust_detail_address,
+        prod_registration_key,
+        cust_join_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      nextCustId,
       cust_username,
       cust_password,
       cust_name,
@@ -115,34 +267,35 @@ app.post('/api/customers/add', upload.fields([
       cust_detail_address,
       prod_registration_key,
       cust_join_date,
-      cust_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+    ];
 
-  const values = [
-    cust_username,
-    cust_password,
-    cust_name,
-    cust_dob,
-    cust_email,
-    cust_phone_num,
-    cust_address,
-    cust_detail_address,
-    prod_registration_key,
-    cust_join_date,
-    cust_id
-  ];
+    db.query(insertQuery, values, (insertErr, insertResult) => {
+      if (insertErr) {
+        console.error('Error executing insert SQL query:', insertErr);
+        if (insertErr['sqlMessage'].toLowerCase().includes('duplicate')) {
+          res.status(409).json({ error: 'Duplicate Entry' });
+        } else {
+          res.status(500).json({ error: 'Internal Server Error' });
+        }
+        return;
+      }
 
-  db.query(sql, values, (err, results) => {
-    if (err) {
-      console.error('Error executing SQL query:', err);
-      res.status(500).json({ error: 'Internal Server Error' });
-      return;
-    }
-
-    res.status(201).json({ message: 'Customer added successfully' });
+      res.status(201).json({message: 'Customer added successfully', cust_id: nextCustId});
+    });
   });
 });
+
+// Function to generate the cust_id based on the count
+function generateCustId(count) {
+  const maxCount = 999999; // Maximum allowed count
+  const paddedCount = String(count).padStart(6, '0'); // Pad count with leading zeros
+  if (count > maxCount) {
+    return 'C' + String(maxCount).padStart(6, '0');
+  } else {
+    return 'C' + paddedCount;
+  }
+}
+
 
 const port = 3000;
 

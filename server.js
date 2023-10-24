@@ -310,6 +310,68 @@ app.post('/api/customers/register', upload.fields([
   });
 });
 
+app.post('/api/customers/calibration', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+  { name: 'cal_mean_raw', maxCount: 1 },
+  { name: 'cal_std_raw', maxCount: 1 },
+  { name: 'cal_mean_emg', maxCount: 1 },
+  { name: 'cal_max_emg', maxCount: 1 },
+  { name: 'cal_min_emg', maxCount: 1 },
+  { name: 'cal_std_emg', maxCount: 1 },
+  { name: 'cal_maa', maxCount: 1 },
+]), (req, res) => {
+  const {
+    cust_username,
+    cal_mean_raw,
+    cal_std_raw,
+    cal_mean_emg,
+    cal_max_emg,
+    cal_min_emg,
+    cal_std_emg,
+    cal_maa,
+  } = req.body;
+
+  const sql = 'SELECT cust_id FROM customers WHERE cust_username = ?';
+  const values = [cust_username];
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (results.length === 1) {
+      
+    const values = {
+      cal_mean_raw: cal_mean_raw,
+      cal_std_raw: cal_std_raw,
+      cal_mean_emg: cal_mean_emg,
+      cal_max_emg: cal_max_emg,
+      cal_min_emg: cal_min_emg,
+      cal_std_emg: cal_std_emg,
+      cal_maa: cal_maa,
+      cust_id: results[0].cust_id,
+      cal_msrd_date: new Date().toISOString().slice(0, 10),
+      cal_trns_date: new Date().toISOString().slice(0, 10),
+    };
+
+      const insertSql = 'INSERT INTO calibration_results SET ?';
+
+      db.query(insertSql, values, (insertErr) => {
+        if (insertErr) {
+          console.error('Error inserting data into the table:', insertErr);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          res.status(200).json({ message: 'OK' });
+        }
+      });
+    } else {
+      res.status(401).json({ error: 'Error' });
+    }
+  });
+});
+
 // Function to generate the cust_id based on the count
 function generateCustId(count) {
   const maxCount = 999999; // Maximum allowed count

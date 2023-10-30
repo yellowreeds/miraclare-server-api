@@ -316,7 +316,7 @@ app.post('/api/customers/scoring', upload.fields([
   { name: 'scor_trsm_date', maxCount: 1 },
   { name: 'scor_vas_value', maxCount: 1 },
   { name: 'scor_vib_inten', maxCount: 1 },
-  { name: 'score_vib_freq', maxCount: 1 },
+  { name: 'scor_vib_freq', maxCount: 1 },
 ]), (req, res) => {
   const {
     cust_username,
@@ -324,7 +324,7 @@ app.post('/api/customers/scoring', upload.fields([
     scor_trsm_date,
     scor_vas_value,
     scor_vib_inten,
-    score_vib_freq,
+    scor_vib_freq,
   } = req.body;
 
   const sql = 'SELECT cust_id FROM customers WHERE cust_username = ?';
@@ -344,7 +344,7 @@ app.post('/api/customers/scoring', upload.fields([
       scor_trsm_date: scor_trsm_date,
       scor_vas_value: scor_vas_value,
       scor_vib_inten: scor_vib_inten,
-      score_vib_freq: score_vib_freq,
+      scor_vib_freq: scor_vib_freq,
       cust_id: results[0].cust_id
     };
 

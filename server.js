@@ -310,6 +310,60 @@ app.post('/api/customers/register', upload.fields([
   });
 });
 
+app.post('/api/customers/scoring', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+  { name: 'scor_msrt_date', maxCount: 1 },
+  { name: 'scor_trsm_date', maxCount: 1 },
+  { name: 'scor_vas_value', maxCount: 1 },
+  { name: 'scor_vib_inten', maxCount: 1 },
+  { name: 'score_vib_freq', maxCount: 1 },
+]), (req, res) => {
+  const {
+    cust_username,
+    scor_msrt_date,
+    scor_trsm_date,
+    scor_vas_value,
+    scor_vib_inten,
+    score_vib_freq,
+  } = req.body;
+
+  const sql = 'SELECT cust_id FROM customers WHERE cust_username = ?';
+  const values = [cust_username];
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (results.length === 1) {
+      
+    const values = {
+      scor_msrt_date: scor_msrt_date,
+      scor_trsm_date: scor_trsm_date,
+      scor_vas_value: scor_vas_value,
+      scor_vib_inten: scor_vib_inten,
+      score_vib_freq: score_vib_freq,
+      cust_id: results[0].cust_id
+    };
+
+      const insertSql = 'INSERT INTO scoring_results SET ?';
+
+      db.query(insertSql, values, (insertErr) => {
+        if (insertErr) {
+          console.error('Error inserting data into the table:', insertErr);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          res.status(200).json({ message: 'OK' });
+        }
+      });
+    } else {
+      res.status(401).json({ error: 'Error' });
+    }
+  });
+});
+
 app.post('/api/customers/calibration', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'cal_mean_raw', maxCount: 1 },

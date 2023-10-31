@@ -1,8 +1,9 @@
 const express = require('express');
 const http = require('http');
 const mysql = require('mysql2');
-const multer = require('multer'); // Add multer
+const multer = require('multer');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -28,7 +29,25 @@ db.connect((err) => {
   console.log('Connected to MariaDB');
 });
 
+const hashedPasswordFromFlutter = '$2a$10$rAPuyw8Vf0GrhHOa0/m3p.Athptj/pL4oGXIZPm4Gn83Pq8KdwzrC';
+async function verifyPassword(plainPassword, hashedPassword) {
+  return await bcrypt.compare(plainPassword, hashedPassword);
+}
+const plaintextPassword = 'Abw110398!';
+
+
 app.get('/', (req, res) => {
+  verifyPassword(plaintextPassword, hashedPasswordFromFlutter)
+  .then((result) => {
+    if (result) {
+      console.log('Password is correct');
+    } else {
+      console.log('Password is incorrect');
+    }
+  })
+  .catch((error) => {
+    console.error('Error verifying password:', error);
+  });
   res.send('Hello, world!');
 });
 
@@ -175,13 +194,13 @@ app.post('/api/customers/login', upload.fields([
   { name: 'username', maxCount: 1 },
   { name: 'password', maxCount: 1 },
   { name: 'ipAddress', maxCount: 1 }
-]), (req, res) => {
+]), async (req, res) => {
   const { username, password, ipAddress } = req.body;
 
-  const sql = 'SELECT * FROM customers WHERE cust_username = ? AND cust_password = ?';
-  const values = [username, password, ipAddress];
+  const selectSql = 'SELECT cust_password, cust_username FROM customers WHERE cust_username = ?';
+  const selectValues = [username];
 
-  db.query(sql, values, (err, results) => {
+  db.query(selectSql, selectValues, async (err, results) => {
     if (err) {
       console.error('Error executing SQL query:', err);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -189,28 +208,42 @@ app.post('/api/customers/login', upload.fields([
     }
 
     if (results.length === 1) {
-      const logData = {
-        cust_username: results[0].cust_username,
-        log_status: 1,
-        log_ipadd: ipAddress,
-        log_access_date: new Date().toISOString().slice(0, 10)
-      };
+      const hashedPasswordFromDB = results[0].cust_password;
 
-      const insertSql = 'INSERT INTO log_history SET ?';
+      try {
+        const isPasswordCorrect = await verifyPassword(password, hashedPasswordFromDB);
 
-      db.query(insertSql, logData, (insertErr) => {
-        if (insertErr) {
-          console.error('Error inserting data into the table:', insertErr);
-          res.status(500).json({ error: 'Internal Server Error' });
+        if (isPasswordCorrect) {
+          const logData = {
+            cust_username: username,
+            log_status: 1,
+            log_ipadd: ipAddress,
+            log_access_date: new Date().toISOString().slice(0, 10)
+          };
+
+          const insertSql = 'INSERT INTO log_history SET ?';
+
+          db.query(insertSql, logData, (insertErr) => {
+            if (insertErr) {
+              console.error('Error inserting data into the table:', insertErr);
+              res.status(500).json({ error: 'Internal Server Error' });
+            } else {
+              res.status(200).json({ message: 'OK' });
+            }
+          });
         } else {
-          res.status(200).json({ message: 'OK' });
+          res.status(401).json({ error: 'Unauthorized' });
         }
-      });
+      } catch (error) {
+        console.error('Error verifying password:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
     } else {
       res.status(401).json({ error: 'Unauthorized' });
     }
   });
 });
+
 
 
 

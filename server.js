@@ -29,25 +29,12 @@ db.connect((err) => {
   console.log('Connected to MariaDB');
 });
 
-const hashedPasswordFromFlutter = '$2a$10$rAPuyw8Vf0GrhHOa0/m3p.Athptj/pL4oGXIZPm4Gn83Pq8KdwzrC';
 async function verifyPassword(plainPassword, hashedPassword) {
   return await bcrypt.compare(plainPassword, hashedPassword);
 }
-const plaintextPassword = 'Abw110398!';
 
 
 app.get('/', (req, res) => {
-  verifyPassword(plaintextPassword, hashedPasswordFromFlutter)
-  .then((result) => {
-    if (result) {
-      console.log('Password is correct');
-    } else {
-      console.log('Password is incorrect');
-    }
-  })
-  .catch((error) => {
-    console.error('Error verifying password:', error);
-  });
   res.send('Hello, world!');
 });
 
@@ -197,7 +184,7 @@ app.post('/api/customers/login', upload.fields([
 ]), async (req, res) => {
   const { username, password, ipAddress } = req.body;
 
-  const selectSql = 'SELECT cust_password, cust_username FROM customers WHERE cust_username = ?';
+  const selectSql = 'SELECT cust_password, cust_username, cust_name FROM customers WHERE cust_username = ?';
   const selectValues = [username];
 
   db.query(selectSql, selectValues, async (err, results) => {
@@ -228,7 +215,7 @@ app.post('/api/customers/login', upload.fields([
               console.error('Error inserting data into the table:', insertErr);
               res.status(500).json({ error: 'Internal Server Error' });
             } else {
-              res.status(200).json({ message: 'OK' });
+              res.status(200).json({ message: results[0].cust_name });
             }
           });
         } else {

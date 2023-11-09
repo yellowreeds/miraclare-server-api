@@ -31,32 +31,57 @@ db.connect((err) => {
   console.log('Connected to MariaDB');
 });
 
-const csvWriter = createCsvWriter({
-  path: 'survey_results.csv', // File path to save the CSV
-  header: [
-    { id: 'sur_id', title: 'Survey ID' },
-    { id: 'sur_height', title: 'Height' },
-    { id: 'sur_weight', title: 'Weight' },
-    { id: 'sur_split_ext', title: 'Split Exp.' },
-    { id: 'sur_botox_trt', title: 'Botox Exp.' },
-    { id: 'sur_sleep_disd', title: 'Sleep Disorder' },
-    { id: 'sur_dur_brx', title: 'Duration of Brx' },
-    { id: 'sur_pain_area', title: 'Pain Area' },
-    { id: 'sur_sick_tzone', title: 'Sick Time Zone' },
-    { id: 'sur_pain_lvl', title: 'Pain Level' },
-    { id: 'sur_apr_obs', title: 'Aperture obstruction' },
-    { id: 'sur_jaw_jmg', title: 'Jaw jamming' },
-    { id: 'sur_fc_asmy', title: 'facial Asymmetry' },
-    { id: 'sur_headache', title: 'Headache' },
-    { id: 'sur_chr_ftg', title: 'Chronic Fatigue' },
-    { id: 'sur_pain_ttgm', title: 'Teeth and Gum Pain' },
-    { id: 'sur_tth_hysn', title: 'Teeth Hypersensitive' },
-    { id: 'sur_strs_lvl', title: 'Stress Level' },
-    { id: 'sur_smkg', title: 'Smoking' },
-    { id: 'sur_drnk', title: 'Drinking' },
-    { id: 'sur_ent_date', title: 'Entry Date' },
-    { id: 'cust_id', title: 'Customer ID' },
-  ],
+
+app.get('/api/surveyResultDownload', (req, res) => {
+  const query = 'SELECT * FROM survey_results';
+
+  db.query(query, (err, rows) => {
+    if (err) {
+      console.error('Error fetching data from the database:', err);
+      res.status(500).send('Error fetching data from the database');
+      return;
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=survey_results.csv');
+
+    const csvWriter = createCsvWriter({
+      path: 'survey_csv/survey_results.csv', 
+      header: [
+        { id: 'sur_id', title: 'Survey ID' },
+        { id: 'sur_height', title: 'Height' },
+        { id: 'sur_weight', title: 'Weight' },
+        { id: 'sur_split_ext', title: 'Split Exp.' },
+        { id: 'sur_botox_trt', title: 'Botox Exp.' },
+        { id: 'sur_sleep_disd', title: 'Sleep Disorder' },
+        { id: 'sur_dur_brx', title: 'Duration of Brx' },
+        { id: 'sur_pain_area', title: 'Pain Area' },
+        { id: 'sur_sick_tzone', title: 'Sick Time Zone' },
+        { id: 'sur_pain_lvl', title: 'Pain Level' },
+        { id: 'sur_apr_obs', title: 'Aperture obstruction' },
+        { id: 'sur_jaw_jmg', title: 'Jaw jamming' },
+        { id: 'sur_fc_asmy', title: 'facial Asymmetry' },
+        { id: 'sur_headache', title: 'Headache' },
+        { id: 'sur_chr_ftg', title: 'Chronic Fatigue' },
+        { id: 'sur_pain_ttgm', title: 'Teeth and Gum Pain' },
+        { id: 'sur_tth_hysn', title: 'Teeth Hypersensitive' },
+        { id: 'sur_strs_lvl', title: 'Stress Level' },
+        { id: 'sur_smkg', title: 'Smoking' },
+        { id: 'sur_drnk', title: 'Drinking' },
+        { id: 'sur_ent_date', title: 'Entry Date' },
+        { id: 'cust_id', title: 'Customer ID' },
+      ],
+    });
+
+    csvWriter.writeRecords([{}]).then(() => {
+      rows.forEach((row) => {
+        csvWriter.writeRecords([row]);
+      });
+
+      const fileStream = fs.createReadStream('survey_csv/survey_results.csv');
+      fileStream.pipe(res);
+    });
+  });
 });
 
 async function verifyPassword(plainPassword, hashedPassword) {
@@ -473,44 +498,10 @@ app.post('/api/customers/calibration', upload.fields([
   });
 });
 
-app.get('/api/surveyResultDownload', (req, res) => {
-  const query = 'SELECT * FROM survey_results';
 
-  db.query(query, (err, rows) => {
-    if (err) {
-      console.error('Error fetching data from the database:', err);
-      res.status(500).send('Error fetching data from the database');
-      return;
-    }
-
-    console.log(rows);
-
-    // Convert data to CSV
-    csvWriter
-      .writeRecords(rows)
-      .then(() => {
-        console.log('CSV file has been written successfully');
-        // Send the CSV file for download
-        res.download('survey_results.csv', 'survey_results.csv', (err) => {
-          if (err) {
-            console.error('Error sending CSV for download:', err);
-            res.status(500).send('Error sending CSV for download');
-          } else {
-            console.log('CSV file sent for download');
-          }
-        });
-      })
-      .catch((error) => {
-        console.error('Error writing CSV file:', error);
-        res.status(500).send('Error writing CSV file');
-      });
-  });
-});
-
-// Function to generate the cust_id based on the count
 function generateCustId(count) {
-  const maxCount = 999999; // Maximum allowed count
-  const paddedCount = String(count).padStart(6, '0'); // Pad count with leading zeros
+  const maxCount = 999999;
+  const paddedCount = String(count).padStart(6, '0');
   if (count > maxCount) {
     return 'C' + String(maxCount).padStart(6, '0');
   } else {

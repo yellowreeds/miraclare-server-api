@@ -84,6 +84,43 @@ app.get('/api/surveyResultDownload', (req, res) => {
   });
 });
 
+app.get('/api/scoringResultDownload', (req, res) => {
+  const query = 'SELECT * FROM scoring_results';
+
+  db.query(query, (err, rows) => {
+    if (err) {
+      console.error('Error fetching data from the database:', err);
+      res.status(500).send('Error fetching data from the database');
+      return;
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=score_results.csv');
+
+    const csvWriter = createCsvWriter({
+      path: 'score_csv/score_results.csv', 
+      header: [
+        { id: 'score_id', title: 'Score ID' },
+        { id: 'scor_msrt_date', title: 'Measurement Date' },
+        { id: 'scor_trsm_date', title: 'Transmission Date' },
+        { id: 'scor_vas_value', title: 'VAS Score' },
+        { id: 'scor_vib_inten', title: 'Vibration Intensity Score' },
+        { id: 'scor_vib_freq', title: 'Vibration Frequency Score' },
+        { id: 'cust_id', title: 'Customer ID' },
+      ],
+    });
+
+    csvWriter.writeRecords([{}]).then(() => {
+      rows.forEach((row) => {
+        csvWriter.writeRecords([row]);
+      });
+
+      const fileStream = fs.createReadStream('score_csv/score_results.csv');
+      fileStream.pipe(res);
+    });
+  });
+});
+
 async function verifyPassword(plainPassword, hashedPassword) {
   return await bcrypt.compare(plainPassword, hashedPassword);
 }

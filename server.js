@@ -6,7 +6,7 @@ const fs = require('fs');
 const multer = require('multer');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
-
+const nodemailer = require('nodemailer');
 const app = express();
 app.set('view engine', 'ejs');
 
@@ -30,6 +30,7 @@ db.connect((err) => {
   }
   console.log('Connected to MariaDB');
 });
+
 
 
 app.get('/api/surveyResultDownload', (req, res) => {
@@ -125,10 +126,47 @@ async function verifyPassword(plainPassword, hashedPassword) {
   return await bcrypt.compare(plainPassword, hashedPassword);
 }
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'yellowreeds@gmail.com',
+    pass: 'gvrd kcwt yqaw vnjm',
+  },
+});
+
+const random6DigitCode = () => {
+  const min = 100000;
+  const max = 999999;
+  const randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
+  return String(randomNum).padStart(6, '0');
+};
+
 
 app.get('/', (req, res) => {
-  res.send('Hello, world!');
+  // Generate a verification code
+  const verificationCode = random6DigitCode();
+
+  // Compose the email
+  const mailOptions = {
+    from: 'yellowreeds@gmail.com',
+    to: 'abismaw@gmail.com',
+    subject: 'Verification Code',
+    text: `Your verification code is: ${verificationCode}`,
+  };
+
+  // Send the email
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      console.log('Email sent:', info.response);
+      res.send('Email sent successfully!');
+    }
+  });
 });
+
+
 
 app.post('/api/customers/survey', upload.fields([
   { name: 'sur_id', maxCount: 1 },
@@ -584,6 +622,36 @@ app.post('/api/customers/changePassword', upload.fields([
       }
     }
   });
+});
+
+app.post('/api/customers/requestVerificationNumber', upload.fields([
+  { name: 'cust_email', maxCount: 1 },
+]), (req, res) => {
+  const {
+    cust_email,
+  } = req.body;
+
+  const verificationCode = random6DigitCode();
+
+  // Compose the email
+  const mailOptions = {
+    from: 'yellowreeds@gmail.com',
+    to: cust_email,
+    subject: 'Verification Code',
+    text: `Your verification code is: ${verificationCode}`,
+  };
+
+  // Send the email
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      console.log('Email sent:', info.response);
+      res.send(verificationCode);
+    }
+  });
+  
 });
 
 

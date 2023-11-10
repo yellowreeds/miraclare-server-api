@@ -535,6 +535,33 @@ app.post('/api/customers/calibration', upload.fields([
   });
 });
 
+app.post('/api/customers/searchID', upload.fields([
+  { name: 'cust_phone_num', maxCount: 1 },
+  { name: 'cust_email', maxCount: 1 },
+]), (req, res) => {
+  const {
+    cust_phone_num,
+    cust_email,
+  } = req.body;
+
+  const sql = 'SELECT cust_username FROM customers WHERE cust_phone_num = ? AND cust_email = ?';
+  const values = [cust_phone_num, cust_email];
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      if (results.length === 1) {
+        const cust_username = results[0].cust_username;
+        res.status(200).json({ message: cust_username });
+      } else {
+        res.status(404).json({ error: 'Customer not found' });
+      }
+    }
+  });
+});
+
 
 function generateCustId(count) {
   const maxCount = 999999;

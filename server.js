@@ -323,8 +323,6 @@ app.post('/api/customers/login', upload.fields([
   });
 });
 
-
-// Define a route to retrieve customer data
 app.get('/api/customers', (req, res) => {
   db.query('SELECT * FROM customers', (err, results) => {
     if (err) {
@@ -362,7 +360,6 @@ app.post('/api/customers/register', upload.fields([
     cust_join_date,
   } = req.body;
 
-  // First, query to get the count of existing data
   const countQuery = 'SELECT COUNT(*) AS count FROM customers';
 
   db.query(countQuery, (countErr, countResult) => {
@@ -555,6 +552,33 @@ app.post('/api/customers/searchID', upload.fields([
       if (results.length === 1) {
         const cust_username = results[0].cust_username;
         res.status(200).json({ message: cust_username });
+      } else {
+        res.status(404).json({ error: 'Customer not found' });
+      }
+    }
+  });
+});
+
+app.post('/api/customers/changePassword', upload.fields([
+  { name: 'cust_phone_num', maxCount: 1 },
+  { name: 'cust_email', maxCount: 1 },
+  { name: 'cust_password', maxCount: 1 },
+]), (req, res) => {
+  const {
+    cust_phone_num,
+    cust_email,
+    cust_password,
+  } = req.body;
+  
+  const sql = 'UPDATE customers set cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
+  const values = [cust_password, cust_phone_num, cust_email];
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else {
+      if (results.affectedRows === 1) {
+        res.status(200).json({ message: 'OK' });
       } else {
         res.status(404).json({ error: 'Customer not found' });
       }

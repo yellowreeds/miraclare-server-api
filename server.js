@@ -306,6 +306,43 @@ app.post('/api/customers/logout', upload.fields([
 
 })
 
+app.post('/api/customers/checkPassword', upload.fields([
+  { name: 'username', maxCount: 1 },
+  { name: 'password', maxCount: 1 },
+]), async (req, res) => {
+  const { username, password } = req.body;
+
+  const selectSql = 'SELECT cust_password, cust_username, cust_name FROM customers WHERE cust_username = ?';
+  const selectValues = [username];
+
+  db.query(selectSql, selectValues, async (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (results.length === 1) {
+      const hashedPasswordFromDB = results[0].cust_password;
+
+      try {
+        const isPasswordCorrect = await verifyPassword(password, hashedPasswordFromDB);
+
+        if (isPasswordCorrect) {
+          res.status(200).json({ message: results[0].cust_name });
+        } else {
+          res.status(401).json({ error: 'Unauthorized' });
+        }
+      } catch (error) {
+        console.error('Error verifying password:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    } else {
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+  });
+});
+
 
 app.post('/api/customers/login', upload.fields([
   { name: 'username', maxCount: 1 },

@@ -303,7 +303,30 @@ app.post('/api/customers/logout', upload.fields([
 
     res.status(201).json({ message: 'OK' });
   });
-})
+});
+
+app.post('/api/customers/getProfileInfo', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+]), (req, res) => {
+  const { cust_username } = req.body;
+  
+  const selectSql = 'SELECT * FROM customers WHERE cust_username = ?';
+  const selectValues = [cust_username];
+  db.query(selectSql, selectValues, (err, results) => {
+    if (err) {
+      console.error('Error executing SQL query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (results.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({ data: results[0] });
+  });
+});
 
 app.get('/api/customers/checkIdExist', (req, res) => {
   const query = 'SELECT cust_username FROM customers';
@@ -324,8 +347,6 @@ app.get('/api/customers/checkIdExist', (req, res) => {
     res.json(data);
   });
 });
-
-
 
 
 app.post('/api/customers/checkPassword', upload.fields([

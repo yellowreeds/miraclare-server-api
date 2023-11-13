@@ -452,6 +452,66 @@ app.get('/api/customers', (req, res) => {
   });
 });
 
+app.post('/api/customers/update', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+  { name: 'cust_name', maxCount: 1 },
+  { name: 'cust_dob', maxCount: 1 },
+  { name: 'cust_email', maxCount: 1 },
+  { name: 'cust_phone_num', maxCount: 1 },
+  { name: 'cust_address', maxCount: 1 },
+  { name: 'cust_password', maxCount: 1 },
+  { name: 'cust_detail_address', maxCount: 1 }
+]), async (req, res) => {
+  const {
+    cust_username,
+    cust_password, 
+    cust_name,
+    cust_dob,
+    cust_email,
+    cust_phone_num,
+    cust_address,
+    cust_detail_address,
+  } = req.body;
+
+  const updateQuery = `
+    UPDATE customers SET
+    cust_name = ?,
+    ${cust_password ? 'cust_password = ?,' : ''}
+    cust_phone_num = ?,
+    cust_dob = ?,
+    cust_email = ?,
+    cust_address = ?,
+    cust_detail_address = ?
+    WHERE cust_username = ?
+  `;
+
+  const values = [
+    cust_name,
+    ...(cust_password ? [cust_password] : []),
+    cust_phone_num,
+    cust_dob,
+    cust_email,
+    cust_address,
+    cust_detail_address,
+    cust_username,
+  ];
+
+  db.query(updateQuery, values, (updateErr, updateResult) => {
+    if (updateErr) {
+      console.error('Error executing update SQL query:', updateErr);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+
+    if (updateResult.affectedRows === 0) {
+      res.status(404).json({ error: 'Customer not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Customer updated successfully' });
+  });
+});
+
 app.post('/api/customers/register', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'cust_password', maxCount: 1 },

@@ -454,7 +454,6 @@ app.get('/api/customers', (req, res) => {
 
 app.post('/api/customers/update', upload.fields([
   { name: 'cust_username', maxCount: 1 },
-  { name: 'cust_name', maxCount: 1 },
   { name: 'cust_dob', maxCount: 1 },
   { name: 'cust_email', maxCount: 1 },
   { name: 'cust_phone_num', maxCount: 1 },
@@ -465,7 +464,6 @@ app.post('/api/customers/update', upload.fields([
   const {
     cust_username,
     cust_password, 
-    cust_name,
     cust_dob,
     cust_email,
     cust_phone_num,
@@ -475,7 +473,6 @@ app.post('/api/customers/update', upload.fields([
 
   const updateQuery = `
     UPDATE customers SET
-    cust_name = ?,
     ${cust_password ? 'cust_password = ?,' : ''}
     cust_phone_num = ?,
     cust_dob = ?,
@@ -486,7 +483,6 @@ app.post('/api/customers/update', upload.fields([
   `;
 
   const values = [
-    cust_name,
     ...(cust_password ? [cust_password] : []),
     cust_phone_num,
     cust_dob,

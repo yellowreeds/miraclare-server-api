@@ -552,7 +552,7 @@ app.post('/api/customers/register', upload.fields([
         cust_detail_address,
         prod_registration_key,
         cust_join_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [

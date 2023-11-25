@@ -144,28 +144,32 @@ const random6DigitCode = () => {
 
 app.get('/', (req, res) => {
   // Generate a verification code
-  const verificationCode = random6DigitCode();
-
-  // Compose the email
-  const mailOptions = {
-    from: 'yellowreeds@gmail.com',
-    to: 'abismaw@gmail.com',
-    subject: 'Verification Code',
-    text: `Your verification code is: ${verificationCode}`,
-  };
-
-  // Send the email
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Error sending email:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    } else {
-      console.log('Email sent:', info.response);
-      res.send('Email sent successfully!');
-    }
-  });
+  
 });
 
+app.post('/api/customers/binUpload', upload.single('cust_file'), (req, res) => {
+  // Check if the 'bin' directory exists, and create it if not
+  const dir = 'bin';
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded.' });
+  }
+
+  const fileName = req.file.originalname;
+  const filePath = `${dir}/${fileName}`;
+
+  fs.writeFile(filePath, req.file.buffer, (err) => {
+    if (err) {
+      console.error('Error writing file:', err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+    res.status(200).json({ message: 'File uploaded successfully', filePath: filePath });
+  });
+});
 
 
 app.post('/api/customers/survey', upload.fields([

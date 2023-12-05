@@ -9,9 +9,13 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const app = express();
 app.set('view engine', 'ejs');
+const archiver = require('archiver');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+const zipFileName = 'binEMG.zip';
+const sourceFolder = 'bin';
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -31,6 +35,19 @@ db.connect((err) => {
   console.log('Connected to MariaDB');
 });
 
+
+app.get('/api/EMGdownload', (req, res) => {
+  const archive = archiver('zip', {
+    zlib: { level: 9 },
+  });
+
+  res.setHeader('Content-Disposition', `attachment; filename=${zipFileName}`);
+  res.setHeader('Content-Type', 'application/zip');
+
+  archive.pipe(res);
+  archive.directory(sourceFolder, false);
+  archive.finalize();
+});
 
 
 app.get('/api/surveyResultDownload', (req, res) => {

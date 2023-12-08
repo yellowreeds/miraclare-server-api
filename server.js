@@ -188,7 +188,6 @@ app.post('/api/customers/binUpload', upload.single('cust_file'), (req, res) => {
   });
 });
 
-
 app.post('/api/customers/survey', upload.fields([
   { name: 'sur_id', maxCount: 1 },
   { name: 'sur_height', maxCount: 1 },
@@ -366,6 +365,33 @@ app.get('/api/customers/checkIdExist', (req, res) => {
 
     res.setHeader('Content-Type', 'application/json');
     res.json(data);
+  });
+});
+
+app.post('/api/customers/checkAlignProcess', upload.fields([
+  { name: 'cust_id', maxCount: 1 },
+]), async (req, res) => {
+  const custId = req.body;
+
+  if (!custId) {
+    res.status(400).send('cust_id is required in form-data');
+    return;
+  }
+
+  const query = 'SELECT cust_id FROM calibration_results WHERE cust_id = ?';
+
+  db.query(query, [custId], (err, rows) => {
+    if (err) {
+      console.error('Error fetching data from the database:', err);
+      res.status(500).send('Error fetching data from the database');
+      return;
+    }
+    if (rows.length === 0) {
+      res.status(404).send('Empty');
+      return;
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.json({ message: err });
   });
 });
 

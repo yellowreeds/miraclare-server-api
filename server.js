@@ -390,8 +390,7 @@ app.post('/api/customers/checkAlignProcess', upload.fields([
       res.status(404).send('Empty');
       return;
     }
-    res.setHeader('Content-Type', 'application/json');
-    res.json({ message: err });
+    res.status(200).json({ message: 'OK' });
   });
 });
 

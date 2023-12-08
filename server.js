@@ -369,30 +369,52 @@ app.get('/api/customers/checkIdExist', (req, res) => {
 });
 
 app.post('/api/customers/checkAlignProcess', upload.fields([
-  { name: 'cust_id', maxCount: 1 },
+  { name: 'cust_username', maxCount: 1 }, // Change the field name to 'cust_name'
 ]), async (req, res) => {
-  const cust_id = req.body.cust_id;
+  const cust_username = req.body.cust_username;
 
-  if (!cust_id) {
-    res.status(400).send('cust_id is required in form-data');
+  if (!cust_username) {
+    res.status(400).send('cust_username is required in form-data');
     return;
   }
 
-  const query = 'SELECT cust_id FROM calibration_results WHERE cust_id = ?';
-  
-  db.query(query, [cust_id], (err, rows) => {
+  const custIdQuery = 'SELECT cust_id FROM customers WHERE cust_username = ?';
+
+  db.query(custIdQuery, [cust_username], (err, custRows) => {
     if (err) {
-      console.error('Error fetching data from the database:', err);
-      res.status(500).send('Error fetching data from the database');
+      console.error('Error fetching cust_id from the database:', err);
+      res.status(500).send('Error fetching cust_id from the database');
       return;
     }
-    if (rows.length === 0) {
-      res.status(404).send('Empty');
+
+    if (custRows.length === 0) {
+      res.status(404).send('Customer not found');
       return;
     }
-    res.status(200).json({ message: 'OK' });
+
+    // Extract the cust_id from the result
+    const cust_id = custRows[0].cust_id;
+
+    // Use the obtained cust_id to check data in calibration_results
+    const query = 'SELECT cust_id FROM calibration_results WHERE cust_id = ?';
+
+    db.query(query, [cust_id], (calibrationErr, calibrationRows) => {
+      if (calibrationErr) {
+        console.error('Error fetching data from the calibration_results table:', calibrationErr);
+        res.status(500).send('Error fetching data from the calibration_results table');
+        return;
+      }
+
+      if (calibrationRows.length === 0) {
+        res.status(404).send('No calibration results found for ' + cust_username);
+        return;
+      }
+
+      res.status(200).json({ message: 'OK' });
+    });
   });
 });
+
 
 
 app.post('/api/customers/checkPassword', upload.fields([

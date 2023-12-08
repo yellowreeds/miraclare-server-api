@@ -371,7 +371,7 @@ app.get('/api/customers/checkIdExist', (req, res) => {
 app.post('/api/customers/checkAlignProcess', upload.fields([
   { name: 'cust_id', maxCount: 1 },
 ]), async (req, res) => {
-  const cust_id = req.body;
+  const cust_id = req.body.cust_id;
 
   if (!cust_id) {
     res.status(400).send('cust_id is required in form-data');
@@ -379,8 +379,7 @@ app.post('/api/customers/checkAlignProcess', upload.fields([
   }
 
   const query = 'SELECT cust_id FROM calibration_results WHERE cust_id = ?';
-  console.log(query);
-
+  
   db.query(query, [cust_id], (err, rows) => {
     if (err) {
       console.error('Error fetching data from the database:', err);

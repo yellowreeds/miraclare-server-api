@@ -379,6 +379,7 @@ app.post('/api/customers/checkAlignProcess', upload.fields([
   }
 
   const query = 'SELECT cust_id FROM calibration_results WHERE cust_id = ?';
+  console.log(query);
 
   db.query(query, [cust_id], (err, rows) => {
     if (err) {

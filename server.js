@@ -654,19 +654,50 @@ app.post('/api/customers/register', upload.fields([
     cust_join_date,
   } = req.body;
 
+  var nextCustId;
   const countQuery = 'SELECT COUNT(*) AS count FROM customers';
-
   db.query(countQuery, (countErr, countResult) => {
     if (countErr) {
       console.error('Error executing count SQL query:', countErr);
       res.status(500).json({ error: 'Internal Server Error' });
       return;
     }
-    const existingDataCount = (countResult[0].count) + 1;
-    const nextCustId = generateCustId(existingDataCount);
-    const insertQuery = `
-      INSERT INTO customers (
-        cust_id,
+    var currentCount = (countResult[0].count);
+    var existingDataCount = currentCount + 1;
+    nextCustId = generateCustId(existingDataCount);
+
+    const checkQuery = `SELECT cust_id FROM customers WHERE cust_id = '${nextCustId}'`;
+
+    db.query(checkQuery, (checkErr, checkResult) => {
+      if (checkErr) {
+        console.error('Error executing check SQL query:', checkErr);
+        res.status(500).json({ error: 'Internal Server Error' });
+        return;
+      }
+      const recordExists = checkResult.length > 0;
+      if (recordExists) {
+        var existingDataCount = currentCount + 2;
+        nextCustId = generateCustId(existingDataCount);
+      }
+      const insertQuery = `
+        INSERT INTO customers (
+          cust_id,
+          cust_username,
+          cust_password,
+          cust_name,
+          cust_dob,
+          cust_gender,
+          cust_email,
+          cust_phone_num,
+          cust_address,
+          cust_detail_address,
+          prod_registration_key,
+          cust_join_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const values = [
+        nextCustId,
         cust_username,
         cust_password,
         cust_name,
@@ -677,38 +708,24 @@ app.post('/api/customers/register', upload.fields([
         cust_address,
         cust_detail_address,
         prod_registration_key,
-        cust_join_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+        cust_join_date,
+      ];
 
-    const values = [
-      nextCustId,
-      cust_username,
-      cust_password,
-      cust_name,
-      cust_dob,
-      cust_gender,
-      cust_email,
-      cust_phone_num,
-      cust_address,
-      cust_detail_address,
-      prod_registration_key,
-      cust_join_date,
-    ];
-
-    db.query(insertQuery, values, (insertErr, insertResult) => {
-      if (insertErr) {
-        console.error('Error executing insert SQL query:', insertErr);
-        if (insertErr['sqlMessage'].toLowerCase().includes('duplicate')) {
-          res.status(409).json({ error: 'Duplicate Entry' });
-        } else {
-          res.status(500).json({ error: 'Internal Server Error' });
+      db.query(insertQuery, values, (insertErr, insertResult) => {
+        if (insertErr) {
+          console.error('Error executing insert SQL query:', insertErr);
+          if (insertErr['sqlMessage'].toLowerCase().includes('duplicate')) {
+            res.status(409).json({ error: 'Duplicate Entry' });
+          } else {
+            res.status(500).json({ error: 'Internal Server Error' });
+          }
+          return;
         }
-        return;
-      }
-
-      res.status(201).json({message: 'Customer added successfully', cust_id: nextCustId});
+        res.status(201).json({message: 'Customer added successfully', cust_id: nextCustId});
+      });
     });
+
+    
   });
 });
 

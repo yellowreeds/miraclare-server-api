@@ -49,7 +49,7 @@ app.get('/api/EMGdownload', (req, res) => {
   archive.finalize();
 });
 
-app.get('/api/EMGdownload', (req, res) => {
+app.get('/api/EMGdownload2', (req, res) => {
   const custUsername = req.query.custUsername;
   const startDate = req.query.startDate;
   const endDate = req.query.endDate;

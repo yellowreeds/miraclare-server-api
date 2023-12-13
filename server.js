@@ -50,16 +50,16 @@ app.get('/api/EMGdownload', (req, res) => {
 });
 
 app.get('/api/EMGdownload2', (req, res) => {
-  const custUsername = req.query.custUsername;
+  const custID = req.query.custID;
   const startDate = req.query.startDate;
   const endDate = req.query.endDate;
 
-  if (!custUsername || !startDate || !endDate) {
+  if (!custID || !startDate || !endDate) {
     return res.status(400).json({ error: 'Invalid request. Missing parameters.' });
   }
 
-  const zipFileName = `${custUsername}_${startDate}_${endDate}.zip`;
-  const sourceFolder = `bin/${custUsername}`;
+  const zipFileName = `${custID}_${startDate}_${endDate}.zip`;
+  const sourceFolder = `bin/${custID}`;
 
   res.setHeader('Content-Disposition', `attachment; filename=${zipFileName}`);
   res.setHeader('Content-Type', 'application/zip');

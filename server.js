@@ -49,6 +49,50 @@ app.get('/api/EMGdownload', (req, res) => {
   archive.finalize();
 });
 
+app.get('/api/EMGdownload', (req, res) => {
+  const custUsername = req.query.custUsername;
+  const startDate = req.query.startDate;
+  const endDate = req.query.endDate;
+
+  if (!custUsername || !startDate || !endDate) {
+    return res.status(400).json({ error: 'Invalid request. Missing parameters.' });
+  }
+
+  const zipFileName = `${custUsername}_${startDate}_${endDate}.zip`;
+  const sourceFolder = `bin/${custUsername}`;
+
+  res.setHeader('Content-Disposition', `attachment; filename=${zipFileName}`);
+  res.setHeader('Content-Type', 'application/zip');
+
+  const archive = archiver('zip', {
+    zlib: { level: 9 },
+  });
+
+  archive.pipe(res);
+
+  // Function to filter files based on their names between startDate and endDate
+  const filterFiles = (filename) => {
+    const fileDate = filename.split('.')[0]; // Remove the .bin extension
+    return fileDate >= startDate && fileDate <= endDate;
+  };
+
+  // List all files in the source folder
+  fs.readdir(sourceFolder, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error reading files.' });
+    }
+
+    // Add files to the zip archive based on the filter
+    files.forEach((filename) => {
+      if (filterFiles(filename)) {
+        archive.append(fs.createReadStream(`${sourceFolder}/${filename}`), { name: filename });
+      }
+    });
+
+    archive.finalize();
+  });
+});
+
 
 app.get('/api/surveyResultDownload', (req, res) => {
   const query = 'SELECT * FROM survey_results';
@@ -165,26 +209,40 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/customers/binUpload', upload.single('cust_file'), (req, res) => {
-  // Check if the 'bin' directory exists, and create it if not
-  const dir = 'bin';
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
+  const custUsername = req.body.custUsername;
+
+  if (!custUsername || !req.file) {
+    return res.status(400).json({ error: 'Invalid request. Missing custUsername or cust_file.' });
   }
 
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded.' });
-  }
-
-  const fileName = req.file.originalname;
-  const filePath = `${dir}/${fileName}`;
-
-  fs.writeFile(filePath, req.file.buffer, (err) => {
+  db.query('SELECT cust_id FROM customers WHERE cust_username = ?', [custUsername], (err, results) => {
     if (err) {
-      console.error('Error writing file:', err);
+      console.error('Database query error:', err);
       return res.status(500).json({ error: 'Internal Server Error' });
     }
 
-    res.status(200).json({ message: 'File uploaded successfully', filePath: filePath });
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const custId = results[0].cust_id;
+    const dir = `bin/${custId}`;
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+
+    const fileName = req.file.originalname;
+    const filePath = `${dir}/${fileName}`;
+
+    fs.writeFile(filePath, req.file.buffer, (err) => {
+      if (err) {
+        console.error('Error writing file:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+
+      res.status(200).json({ message: 'File uploaded successfully', filePath: filePath });
+    });
   });
 });
 

@@ -360,6 +360,114 @@ app.post('/api/customers/survey', upload.fields([
   });
 });
 
+app.post('/api/sleepDataProcess', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+  { name: 'fileName', maxCount: 1 },
+]), (req, res) => {
+  const { cust_username, fileName } = req.body;
+
+  if (!cust_username || !fileName) {
+    return res.status(400).json({ error: 'Invalid request. Missing cust_username or fileName.' });
+  }
+
+  // Query the database to obtain cust_id based on cust_username
+  db.query('SELECT cust_id FROM customers WHERE cust_username = ?', [cust_username], (err, results) => {
+    if (err) {
+      console.error('Database query error:', err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const custId = results[0].cust_id;
+
+    // Modify the fileName to include cust_id/bin/
+    const modifiedFileName = `bin/${custId}/${fileName}`;
+
+    // Create a temporary Python script file
+    const tempPythonScript = `from sleep_data_func import summary;import json;result = summary("${modifiedFileName}");print(json.dumps(result))`;
+
+    const tempScriptPath = path.join(__dirname, 'temp_script.py');
+
+    fs.writeFileSync(tempScriptPath, tempPythonScript);
+
+    // Spawn a Python process to run the temporary script
+    const pythonProcess = spawn('python', [tempScriptPath]);
+
+    let pythonOutput = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      pythonOutput += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error(`Python stderr: ${data}`);
+    });
+
+    // Handle the exit of the Python process
+    pythonProcess.on('close', (code) => {
+      // Remove the temporary script file
+      fs.unlinkSync(tempScriptPath);
+
+      if (code === 0) {
+        // Python script executed successfully
+        try {
+          const result = JSON.parse(pythonOutput.trim());
+
+          // Get the current date and time
+          const now = new Date();
+          const year = now.getFullYear().toString().substr(-2);
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const date = String(now.getDate()).padStart(2, '0');
+          const day = now.getDay(); // 0 for Sunday, 1 for Monday, ...
+
+          // Create the MySQL date format
+          const analysisYear = year;
+          const analysisMonth = month;
+          const analysisDate = date;
+          const analysisDay = day.toString();
+
+          // Prepare the data for insertion into the database
+          const sleepData = {
+            sleep_start: result.str_time,
+            sleep_stop: result.stp_time,
+            sleep_br_episode: result.br_episode,
+            sleep_file_name: modifiedFileName,
+            sleep_vth: result.VTH,
+            sleep_emg_max: result.emg_max,
+            sleep_emg_mean: result.emg_mean,
+            sleep_emg_min: result.emg_min,
+            sleep_win_size: result.win_size,
+            sleep_vib_int: result.vib_int,
+            sleep_analysis_year: analysisYear,
+            sleep_analysis_month: analysisMonth,
+            sleep_analysis_date: analysisDate,
+            sleep_analysis_day: analysisDay,
+            cust_id: custId
+          };
+
+          db.query('INSERT INTO sleep_data SET ?', sleepData, (err, results) => {
+            if (err) {
+              console.error('Error inserting data into the database:', err);
+              res.status(500).json({ error: 'Error inserting data into the database' });
+            } else {
+              res.status(200).json({ message: 'Data uploaded to the database successfully', data: sleepData });
+            }
+          });
+        } catch (err) {
+          res.status(500).json({ error: 'Error parsing Python output' });
+        }
+      } else {
+        // Python script encountered an error
+        res.status(500).json({ error: 'Python script encountered an error' });
+      }
+    });
+  });
+});
+
+
 app.post('/api/customers/sleepDataResult', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'fromDate', maxCount: 1 },

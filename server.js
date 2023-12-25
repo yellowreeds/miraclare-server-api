@@ -394,7 +394,7 @@ app.post('/api/sleepDataProcess', upload.fields([
     fs.writeFileSync(tempScriptPath, tempPythonScript);
 
     // Spawn a Python process to run the temporary script
-    const pythonProcess = spawn('python', [tempScriptPath]);
+    const pythonProcess = spawn('python3', [tempScriptPath]);
 
     let pythonOutput = '';
 

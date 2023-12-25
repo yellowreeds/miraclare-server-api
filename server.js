@@ -8,8 +8,10 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const app = express();
+const path = require('path');
 app.set('view engine', 'ejs');
 const archiver = require('archiver');
+const { spawn } = require('child_process');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -92,7 +94,6 @@ app.get('/api/EMGdownload2', (req, res) => {
     archive.finalize();
   });
 });
-
 
 app.get('/api/surveyResultDownload', (req, res) => {
   const query = 'SELECT * FROM survey_results';
@@ -357,6 +358,146 @@ app.post('/api/customers/survey', upload.fields([
 
     res.status(201).json({ message: 'Survey data saved successfully' });
   });
+});
+
+app.post('/api/customers/sleepDataResult', upload.fields([
+  { name: 'cust_username', maxCount: 1 },
+  { name: 'fromDate', maxCount: 1 },
+  { name: 'to_date', maxCount: 1 },
+]), (req, res) => {
+  const { cust_username, fromDate, toDate } = req.body;
+
+  if (!cust_username || !fromDate || !toDate) {
+    return res.status(400).json({ error: 'Missing parameters in the request body.' });
+  }
+
+  // Initialize the result object
+  const result = {
+    latest_br_episode: 0,
+    highest_br_max: 0,
+    latest_data: '',
+    average_br_episode: 0,
+    br_data: {}, // New field for bruxism data
+  };
+
+  // Step 1: Get the cust_id based on cust_username
+  db.query(
+    'SELECT cust_id FROM customers WHERE cust_username = ?',
+    [cust_username],
+    (err, results0) => {
+      if (err) {
+        console.error('Error retrieving cust_id:', err);
+        return res.status(500).json({ error: 'Error retrieving data' });
+      }
+
+      const cust_id = results0[0]?.cust_id || null;
+
+      if (!cust_id) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+
+      // Step 2: Get the latest sleep_br_episode
+      db.query(
+        'SELECT sleep_br_episode AS latest_br_episode, ' +
+        'sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
+        'FROM sleep_data ' +
+        'WHERE cust_id = ? ' +
+        'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
+        'sleep_analysis_date DESC, sleep_analysis_day DESC ' +
+        'LIMIT 1',
+        [cust_id],
+        (err, results1) => {
+          if (err) {
+            console.error('Error retrieving latest sleep_br_episode:', err);
+            return res.status(500).json({ error: 'Error retrieving data' });
+          }
+
+          const latestData = results1[0] || null;
+          if (latestData) {
+            const fullYear = new Date().getFullYear();
+            const yearPrefix = fullYear.toString().substring(0, 2); // Extract the first two digits of the current year
+            result.latest_br_episode = latestData.latest_br_episode || 0;
+            result.latest_data = `${yearPrefix}${latestData.sleep_analysis_year}. ${latestData.sleep_analysis_month}. ${latestData.sleep_analysis_date}`;
+          }
+
+          const fromDateStart = new Date(fromDate);
+          fromDateStart.setHours(0, 0, 0, 0);
+          const toDateEnd = new Date(toDate);
+          toDateEnd.setHours(23, 59, 59, 999);
+
+          // Step 3: Get the highest sleep_emg_max for the last 7 days
+          db.query(
+            'SELECT MAX(sleep_br_episode) AS highest_br_episode ' +
+            'FROM sleep_data ' +
+            'WHERE cust_id = ? ' +
+            'AND sleep_analysis_year >= ? ' +
+            'AND sleep_analysis_month >= ? ' +
+            'AND sleep_analysis_date >= ? ' +
+            'AND sleep_analysis_year <= ? ' +
+            'AND sleep_analysis_month <= ? ' +
+            'AND sleep_analysis_date <= ? ' +
+            'ORDER BY sleep_br_episode DESC ' +
+            'LIMIT 1',
+            [cust_id, fromDateStart.getFullYear() % 100, fromDateStart.getMonth() + 1, fromDateStart.getDate(), toDateEnd.getFullYear() % 100, toDateEnd.getMonth() + 1, toDateEnd.getDate()],
+            (err, results2) => {
+              if (err) {
+                console.error('Error retrieving highest sleep_emg_max:', err);
+                return res.status(500).json({ error: 'Error retrieving data' });
+              }
+          
+              result.highest_br_max = results2[0]?.highest_br_episode || 0;
+          
+              // Step 4: Get every sleep_br_episode data for the specified date range and sum them
+          
+              db.query(
+                'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
+                'FROM sleep_data ' +
+                'WHERE cust_id = ? ' +
+                'AND sleep_analysis_year >= ? ' +
+                'AND sleep_analysis_month >= ? ' +
+                'AND sleep_analysis_date >= ? ' +
+                'AND sleep_analysis_year <= ? ' +
+                'AND sleep_analysis_month <= ? ' +
+                'AND sleep_analysis_date <= ? ' +
+                'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
+                'sleep_analysis_date DESC',
+                [cust_id, fromDateStart.getFullYear() % 100, fromDateStart.getMonth() + 1, fromDateStart.getDate(), toDateEnd.getFullYear() % 100, toDateEnd.getMonth() + 1, toDateEnd.getDate()],
+                (err, results3) => {
+                  if (err) {
+                    console.error('Error retrieving sleep_br_episode data:', err);
+                    return res.status(500).json({ error: 'Error retrieving data' });
+                  }
+          
+                  const brData = {};
+          
+                  results3.forEach((row) => {
+                    const dateKey = `${row.sleep_analysis_year}.${row.sleep_analysis_month}.${row.sleep_analysis_date}`;
+                    if (!brData[dateKey]) {
+                      brData[dateKey] = 0;
+                    }
+                    brData[dateKey] += row.sleep_br_episode;
+                  });
+          
+                  result.br_data = brData;
+          
+                  // Step 5: Calculate the average
+                  if (results3.length > 0) {
+                    let totalSum = 0;
+                    results3.forEach((row) => {
+                      totalSum += row.sleep_br_episode || 0;
+                    });
+                    result.average_br_episode = totalSum / results3.length;
+                  }
+          
+                  res.status(200).json(result);
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
 });
 
 app.post('/api/customers/logout', upload.fields([

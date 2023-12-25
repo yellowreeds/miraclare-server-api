@@ -702,13 +702,13 @@ app.post('/api/customers/checkAlignProcess', upload.fields([
     // Extract the cust_id from the result
     const cust_id = custRows[0].cust_id;
 
-    // Use the obtained cust_id to check data in calibration_results
-    const query = 'SELECT cust_id FROM calibration_results WHERE cust_id = ?';
+    // Use the obtained cust_id to check data in align_process_results
+    const query = 'SELECT cust_id FROM align_process_results WHERE cust_id = ?';
 
     db.query(query, [cust_id], (calibrationErr, calibrationRows) => {
       if (calibrationErr) {
-        console.error('Error fetching data from the calibration_results table:', calibrationErr);
-        res.status(500).send('Error fetching data from the calibration_results table');
+        console.error('Error fetching data from the align_process_results table:', calibrationErr);
+        res.status(500).send('Error fetching data from the align_process_results table');
         return;
       }
 
@@ -1078,7 +1078,7 @@ app.post('/api/customers/calibration', upload.fields([
       cal_trns_date: new Date().toISOString().slice(0, 10),
     };
 
-      const insertSql = 'INSERT INTO calibration_results SET ?';
+      const insertSql = 'INSERT INTO align_process_results SET ?';
 
       db.query(insertSql, values, (insertErr) => {
         if (insertErr) {

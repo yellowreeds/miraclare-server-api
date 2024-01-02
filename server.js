@@ -508,7 +508,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
       // Step 2: Get the latest sleep_br_episode
       db.query(
         'SELECT sleep_br_episode AS latest_br_episode, ' +
-        'sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
+        'sleep_analysis_year, sleep_analysis_month, sleep_analysis_date, sleep_duration ' +
         'FROM sleep_data ' +
         'WHERE cust_id = ? ' +
         'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +

@@ -507,7 +507,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
 
       // Step 2: Get the latest sleep_br_episode
       db.query(
-        'SELECT sleep_br_episode AS latest_br_episode, ' +
+        'SELECT sleep_br_episode, sleep_start, sleep_stop AS latest_br_episode, ' +
         'sleep_duration, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
         'FROM sleep_data ' +
         'WHERE cust_id = ? ' +
@@ -527,6 +527,8 @@ app.post('/api/customers/sleepDataResult', upload.fields([
             const yearPrefix = fullYear.toString().substring(0, 2); // Extract the first two digits of the current year
             result.latest_br_episode = latestData.latest_br_episode || 0;
             result.sleep_duration = latestData.sleep_duration || 0;
+            result.sleep_start = latestData.sleep_start;
+            result.sleep_stop = latestData.sleep_stop;
             result.latest_data = `${yearPrefix}${latestData.sleep_analysis_year}. ${latestData.sleep_analysis_month}. ${latestData.sleep_analysis_date}`;
           }
 

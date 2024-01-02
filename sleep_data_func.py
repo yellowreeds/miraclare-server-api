@@ -101,7 +101,7 @@ def summary(file_path:str):
         'br_episode': number_of_br_episode,
         'fl_name': file_path,
         'sleep_duration': length,
-        'VTH': vth,        
+        'VTH': vth,
         'emg_max': sb_emg_maximum,
         'emg_min': sb_emg_minimum,
         'emg_mean': sb_emg_mean,

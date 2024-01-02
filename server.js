@@ -436,6 +436,7 @@ app.post('/api/sleepDataProcess', upload.fields([
             sleep_br_episode: result.br_episode,
             sleep_file_name: modifiedFileName,
             sleep_vth: result.VTH,
+            sleep_vth: result.length,
             sleep_emg_max: result.emg_max,
             sleep_emg_mean: result.emg_mean,
             sleep_emg_min: result.emg_min,

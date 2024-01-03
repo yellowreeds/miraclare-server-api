@@ -78,7 +78,7 @@ def summary(file_path:str):
         formatted_start_time = ""
 
     # Calculate the stop time based on the start time and length (in milliseconds)
-    length = len(arr) / 4 / 1000  # Length in seconds
+    length = len(arr) / 4.5 / 1000  # Length in seconds
     stop_time = ""  # Initialize stop_time as an empty string
     if formatted_start_time:
         start_time = datetime.datetime.strptime(formatted_start_time, "%Y-%m-%d %H:%M:%S")

@@ -512,7 +512,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
         'FROM sleep_data ' +
         'WHERE cust_id = ? ' +
         'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
-        'sleep_analysis_date DESC, sleep_analysis_day DESC ' +
+        'sleep_analysis_date DESC, sleep_analysis_day DESC, sleep_start DESC ' +
         'LIMIT 1',
         [cust_id],
         (err, results1) => {

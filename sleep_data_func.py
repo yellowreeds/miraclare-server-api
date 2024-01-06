@@ -103,7 +103,7 @@ def summary(file_path:str):
     window_size = int(ws)
     
     # Convert NumPy arrays to Python lists
-    vib_intensity_values = vib_intensity(arr).tolist()
+    vib_intensity_values = vib_intensity(arr)
 
     result = {
         'str_time': formatted_start_time,

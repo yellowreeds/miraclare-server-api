@@ -573,8 +573,6 @@ app.post('/api/customers/sleepDataResult', upload.fields([
               ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, sleep_analysis_date DESC
             `;
             
-            console.log('SQL Query:', sqlQuery);
-            
               db.query(
                 sqlQuery,
                 [
@@ -587,6 +585,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                   toDateEnd.getDate().toString().padStart(2, '0')
                 ],
                 (err, results3) => {
+                  console.log('SQL Query:', sqlQuery);
                   if (err) {
                     console.error('Error retrieving sleep_br_episode data:', err);
                     return res.status(500).json({ error: 'Error retrieving data' });

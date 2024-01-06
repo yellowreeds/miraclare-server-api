@@ -100,7 +100,6 @@ def summary(file_path:str):
     sb_emg_minimum = int(st['min'])
     sb_emg_mean = int(st['mean'])
     window_size = int(ws)
-    print(sb_emg_mean)
     # Convert NumPy arrays to Python lists
     vib_intensity_values = vib_intensity(arr)
     result = {

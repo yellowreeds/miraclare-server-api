@@ -414,6 +414,7 @@ app.post('/api/sleepDataProcess', upload.fields([
       if (code === 0) {
         // Python script executed successfully
         try {
+          console.log(pythonOutput.trim());
           const result = JSON.parse(pythonOutput.trim());
 
           // Get the current date and time

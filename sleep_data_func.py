@@ -100,8 +100,10 @@ def summary(file_path:str):
     sb_emg_minimum = int(st['min'])
     sb_emg_mean = int(st['mean'])
     window_size = int(ws)
+    
     # Convert NumPy arrays to Python lists
     vib_intensity_values = vib_intensity(arr)
+
     result = {
         'str_time': formatted_start_time,
         'stp_time': stop_time,
@@ -109,7 +111,7 @@ def summary(file_path:str):
         'fl_name': file_path,
         'VTH': vth,        
         'emg_max': sb_emg_maximum,
-        'emg_min': sb_emg_minimum,
+        'emg_min': st['mean'],
         'emg_mean': sb_emg_mean,
         'win_size': window_size,
         'vib_int': vib_intensity_values

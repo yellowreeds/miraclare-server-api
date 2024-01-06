@@ -560,32 +560,22 @@ app.post('/api/customers/sleepDataResult', upload.fields([
               result.highest_br_max = results2[0]?.highest_br_episode || 0;
           
               // Step 4: Get every sleep_br_episode data for the specified date range and sum them
-              const sqlQuery = `
-              SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date
-              FROM sleep_data
-              WHERE cust_id = ?
-                AND sleep_analysis_year >= ?
-                AND sleep_analysis_month >= ?
-                AND sleep_analysis_date >= ?
-                AND sleep_analysis_year <= ?
-                AND sleep_analysis_month <= ?
-                AND sleep_analysis_date <= ?
-              ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, sleep_analysis_date DESC
-            `;
-            
+          
               db.query(
-                sqlQuery,
-                [
-                  cust_id,
-                  (fromDateStart.getFullYear() % 100).toString(),
-                  (fromDateStart.getMonth() + 1).toString().padStart(2, '0'),
-                  fromDateStart.getDate().toString().padStart(2, '0'),
-                  (toDateEnd.getFullYear() % 100).toString(),
-                  (toDateEnd.getMonth() + 1).toString().padStart(2, '0'),
-                  toDateEnd.getDate().toString().padStart(2, '0')
-                ],
+                'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
+                'FROM sleep_data ' +
+                'WHERE cust_id = ? ' +
+                'AND sleep_analysis_year >= ? ' +
+                'AND sleep_analysis_month >= ? ' +
+                'AND sleep_analysis_date >= ? ' +
+                'AND sleep_analysis_year <= ? ' +
+                'AND sleep_analysis_month <= ? ' +
+                'AND sleep_analysis_date <= ? ' +
+                'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
+                'sleep_analysis_date DESC',
+                [cust_id, fromDateStart.getFullYear() % 100, (fromDateStart.getMonth() + 1).padStart(2, '0'), fromDateStart.getDate().padStart(2, '0'), toDateEnd.getFullYear() % 100, (fromDateStart.getMonth() + 1).padStart(2, '0'), toDateEnd.getDate().padStart(2, '0')],
                 (err, results3) => {
-                  console.log('SQL Query:', sqlQuery);
+                  console.log(cust_id, fromDateStart.getFullYear() % 100, (fromDateStart.getMonth() + 1).padStart(2, '0'), fromDateStart.getDate().padStart(2, '0'), toDateEnd.getFullYear() % 100, (fromDateStart.getMonth() + 1).padStart(2, '0'), toDateEnd.getDate().padStart(2, '0'));
                   if (err) {
                     console.error('Error retrieving sleep_br_episode data:', err);
                     return res.status(500).json({ error: 'Error retrieving data' });

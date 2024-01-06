@@ -573,7 +573,15 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                 'AND sleep_analysis_date <= ? ' +
                 'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
                 'sleep_analysis_date DESC',
-                [cust_id, fromDateStart.getFullYear() % 100, (fromDateStart.getMonth() + 1).padStart(2, '0'), fromDateStart.getDate().padStart(2, '0'), toDateEnd.getFullYear() % 100, (fromDateStart.getMonth() + 1).padStart(2, '0'), toDateEnd.getDate().padStart(2, '0')],
+                [
+                  cust_id,
+                  (fromDateStart.getFullYear() % 100).toString(),
+                  (fromDateStart.getMonth() + 1).toString().padStart(2, '0'),
+                  fromDateStart.getDate().toString().padStart(2, '0'),
+                  (toDateEnd.getFullYear() % 100).toString(),
+                  (toDateEnd.getMonth() + 1).toString().padStart(2, '0'),
+                  toDateEnd.getDate().toString().padStart(2, '0')
+                ],
                 (err, results3) => {
                   if (err) {
                     console.error('Error retrieving sleep_br_episode data:', err);

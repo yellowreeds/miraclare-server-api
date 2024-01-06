@@ -1,6 +1,14 @@
 import numpy as np
 import datetime  # Add this import for datetime
 import re
+import ctypes
+
+path = '/home/ec2-user/.local/lib/python3.9/site-packages/miraclare/server/libnative_rev01.'
+try:
+    lib = ctypes.CDLL(path+'so')
+except:
+    lib = ctypes.CDLL(path+'dll')
+    
 def load_bin(file_path:str, dtype=np.uint8):
     try:
         with open(file_path, 'rb') as file:
@@ -9,53 +17,55 @@ def load_bin(file_path:str, dtype=np.uint8):
     except IOError as e:
         print(f"File can't be opened: {e}")
         return None
-    
-def compress_file(arr:np.ndarray):
-    arr_ = arr.reshape(-1, 18)
-    comp_arr = np.zeros((len(arr_),8), dtype=np.uint8)
-    for i in range(len(arr_)):
-        comp_arr[i][0] = arr_[i][2]                  # Counter
-        comp_arr[i][1] = arr_[i][3] | (arr_[i][5]<<4) # MSB 10
-        comp_arr[i][2] = arr_[i][4]                  # LSB 0
-        comp_arr[i][3] = arr_[i][6]                  # LSB 1
-        comp_arr[i][4] = arr_[i][7] | (arr_[i][9]<<4) # MSB 32
-        comp_arr[i][5] = arr_[i][8]                  # LSB 2
-        comp_arr[i][6] = arr_[i][10]                 # LSB3
-        comp_arr[i][7] = arr_[i][15]                 # Vib, WS, Lead Off, Bruxism
-    return comp_arr.flatten()
-def get_sig(arr:np.ndarray):
-    arr_ = arr.reshape(-1,18)
-    sig = np.zeros((len(arr_),4), dtype=np.uint16)
-    for i in range(len(arr_)):
-        sig[i][0] = (arr_[i][3].astype('uint16') << 8) | arr_[i][4].astype('uint16')
-        sig[i][1] = (arr_[i][5].astype('uint16') << 8) | arr_[i][6].astype('uint16')
-        sig[i][2] = (arr_[i][7].astype('uint16') << 8) | arr_[i][8].astype('uint16')
-        sig[i][3] = (arr_[i][9].astype('uint16') << 8) | arr_[i][10].astype('uint16')
-    return sig.flatten()
-def vib_intensity(arr:np.ndarray):
-    arr_ = arr.reshape(-1,18)
-    vib = arr_[:,15]
-    for i in range(len(vib)):
-        vib[i] = vib[i]>>4
-    vib[vib == 0] = 255
-    return vib.min()
 
+C_compress_file = lib.compress_file
+C_compress_file.restype = ctypes.c_uint8
+C_compress_file.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint]
+def compress_file(arr: np.ndarray):
+    arr_ = arr.flatten()
+    comp_arr = np.zeros(arr_.shape[0]//18* 8, dtype=np.uint8)
+
+    # C_compress_file 함수에 전달하기 위한 배열 슬라이스 생성
+    input_slice = np.ctypeslib.as_ctypes(arr_)
+    output_slice = np.ctypeslib.as_ctypes(comp_arr)
+
+    # C_compress_file 함수 호출
+    C_compress_file(input_slice, output_slice, arr_.shape[0])
+
+    return np.ctypeslib.as_array(output_slice, shape=comp_arr.shape)
+
+C_get_sig = lib.get_sig
+C_get_sig.restype = ctypes.c_uint8
+C_get_sig.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint16), ctypes.c_uint]
+def get_sig(arr:np.ndarray):
+    arr_ = arr.flatten()
+    sig = np.zeros(arr_.shape[0]*4, dtype=np.uint16)
+    input_slice = np.ctypeslib.as_ctypes(arr_)
+    output_slice = np.ctypeslib.as_ctypes(sig)
+    C_get_sig(input_slice, output_slice, arr_.shape[0])
+    return np.ctypeslib.as_array(output_slice, shape=sig.shape[0])
+
+C_vib_intensity = lib.vib_intensity
+C_vib_intensity.restype = ctypes.c_uint8
+C_vib_intensity.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint]
+def vib_intensity(arr: np.ndarray):
+    arr_ = arr.flatten()
+    input_slice = np.ctypeslib.as_ctypes(arr_)
+    vib = C_vib_intensity(input_slice, arr_.shape[0])
+    if vib == 255:
+        return 0
+    else:
+        return vib
+
+C_count_episode = lib.count_episode
+C_count_episode.restype = ctypes.c_uint16
+C_count_episode.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint]
 def count_episode(arr:np.ndarray):
-    arr_ = arr.reshape(-1,18)
-    vib = vib_intensity(arr_)
-    counter = 0
-    flag = False
-    
-    sig = get_sig(arr)
-    for i in range(len(sig)-1):
-        if flag:
-            if (sig[i] == vib) and (sig[i+1] == 0):
-                flag = False
-        else:
-            if (sig[i] == 0) and (sig[i+1] == vib):
-                flag = True
-                counter += 1
-    return counter
+    arr_ = arr.flatten()
+    input_slice = np.ctypeslib.as_ctypes(arr_)
+    tmp = get_sig(arr_)
+    signal_slice = np.ctypeslib.as_ctypes(tmp)
+    return C_count_episode(input_slice, arr_.shape[0], signal_slice, tmp.shape[0])
 
 def statistics(arr:np.ndarray):
     arr_ = get_sig(arr)
@@ -78,7 +88,7 @@ def summary(file_path:str):
         formatted_start_time = ""
 
     # Calculate the stop time based on the start time and length (in milliseconds)
-    length = len(arr) / 4.5 / 1000  # Length in seconds
+    length = len(arr) / 4 / 1000  # Length in seconds
     stop_time = ""  # Initialize stop_time as an empty string
     if formatted_start_time:
         start_time = datetime.datetime.strptime(formatted_start_time, "%Y-%m-%d %H:%M:%S")
@@ -100,7 +110,6 @@ def summary(file_path:str):
         'stp_time': stop_time,
         'br_episode': number_of_br_episode,
         'fl_name': file_path,
-        'sleep_duration': length,
         'VTH': vth,        
         'emg_max': sb_emg_maximum,
         'emg_min': sb_emg_minimum,

@@ -560,19 +560,23 @@ app.post('/api/customers/sleepDataResult', upload.fields([
               result.highest_br_max = results2[0]?.highest_br_episode || 0;
           
               // Step 4: Get every sleep_br_episode data for the specified date range and sum them
-          
+              const sqlQuery = `
+              SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date
+              FROM sleep_data
+              WHERE cust_id = ?
+                AND sleep_analysis_year >= ?
+                AND sleep_analysis_month >= ?
+                AND sleep_analysis_date >= ?
+                AND sleep_analysis_year <= ?
+                AND sleep_analysis_month <= ?
+                AND sleep_analysis_date <= ?
+              ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, sleep_analysis_date DESC
+            `;
+            
+            console.log('SQL Query:', sqlQuery);
+            
               db.query(
-                'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
-                'FROM sleep_data ' +
-                'WHERE cust_id = ? ' +
-                'AND sleep_analysis_year >= ? ' +
-                'AND sleep_analysis_month >= ? ' +
-                'AND sleep_analysis_date >= ? ' +
-                'AND sleep_analysis_year <= ? ' +
-                'AND sleep_analysis_month <= ? ' +
-                'AND sleep_analysis_date <= ? ' +
-                'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
-                'sleep_analysis_date DESC',
+                sqlQuery,
                 [
                   cust_id,
                   (fromDateStart.getFullYear() % 100).toString(),

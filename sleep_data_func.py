@@ -109,9 +109,10 @@ def summary(file_path:str):
         'stp_time': stop_time,
         'br_episode': number_of_br_episode,
         'fl_name': file_path,
-        'VTH': vth,        
+        'VTH': vth,
+        'sleep_duration': length,   
         'emg_max': sb_emg_maximum,
-        'emg_min': st['mean'],
+        'emg_min': sb_emg_minimum,
         'emg_mean': sb_emg_mean,
         'win_size': window_size,
         'vib_int': vib_intensity_values

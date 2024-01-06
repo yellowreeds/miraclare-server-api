@@ -104,6 +104,7 @@ def summary(file_path:str):
     # Convert NumPy arrays to Python lists
     vib_intensity_values = vib_intensity(arr)
     print(sb_emg_mean)
+    print(sb_emg_maximum)
     result = {
         'str_time': formatted_start_time,
         'stp_time': stop_time,

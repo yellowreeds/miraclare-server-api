@@ -71,7 +71,6 @@ def statistics(arr:np.ndarray):
     arr_ = get_sig(arr)
     return {'max':arr_.max(), 'min':arr_.min(), 'mean':int(arr_.mean())}
 
-import re  # Add this import for regular expressions
 def summary(file_path:str):
     arr = load_bin(file_path)
     ws = (arr[-3] >> 2) & 0b11
@@ -119,3 +118,19 @@ def summary(file_path:str):
     }
 
     return result
+
+C_decompress_file = lib.decompressed_file
+C_decompress_file.restype = ctypes.c_uint8
+C_decompress_file.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint16), ctypes.c_uint]
+def decompressed_file(comp_arr:np.ndarray):
+    comp_arr_ = comp_arr.flatten()
+    decomp_arr = np.zeros(comp_arr_.shape[0] // 8 * 9, dtype=np.uint16)
+
+    # C_compress_file 함수에 전달하기 위한 배열 슬라이스 생성
+    input_slice = np.ctypeslib.as_ctypes(comp_arr_)
+    output_slice = np.ctypeslib.as_ctypes(decomp_arr)
+
+    # C_compress_file 함수 호출
+    C_decompress_file(input_slice, output_slice, comp_arr_.shape[0])
+
+    return np.ctypeslib.as_array(output_slice, shape=decomp_arr.shape)

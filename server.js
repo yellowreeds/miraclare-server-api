@@ -565,14 +565,11 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                 'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
                 'FROM sleep_data ' +
                 'WHERE cust_id = ? ' +
-                'AND sleep_analysis_year >= ? ' +
-                'AND sleep_analysis_month >= ? ' +
-                'AND sleep_analysis_date >= ? ' +
-                'AND sleep_analysis_year <= ? ' +
-                'AND sleep_analysis_month <= ? ' +
-                'AND sleep_analysis_date <= ? ' +
-                'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
-                'sleep_analysis_date DESC',
+                'AND (' +
+                '(sleep_analysis_year = ? AND sleep_analysis_month = ? AND sleep_analysis_date >= ?) ' +
+                'OR (sleep_analysis_year = ? AND sleep_analysis_month = ? AND sleep_analysis_date <= ?) ' +
+                ') ' +
+                'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, sleep_analysis_date DESC',
                 [
                   cust_id,
                   (fromDateStart.getFullYear() % 100).toString(),

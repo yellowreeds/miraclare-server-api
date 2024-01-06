@@ -580,13 +580,6 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                   toDateEnd.getDate().toString().padStart(2, '0')
                 ],
                 (err, results3) => {
-                  console.log(cust_id,
-                    (fromDateStart.getFullYear() % 100).toString(),
-                    (fromDateStart.getMonth() + 1).toString().padStart(2, '0'),
-                    fromDateStart.getDate().toString().padStart(2, '0'),
-                    (toDateEnd.getFullYear() % 100).toString(),
-                    (toDateEnd.getMonth() + 1).toString().padStart(2, '0'),
-                    toDateEnd.getDate().toString().padStart(2, '0'));
                   if (err) {
                     console.error('Error retrieving sleep_br_episode data:', err);
                     return res.status(500).json({ error: 'Error retrieving data' });

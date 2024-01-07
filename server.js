@@ -685,6 +685,26 @@ app.get('/api/customers/checkIdExist', (req, res) => {
   });
 });
 
+app.get('/api/customers/checkEmailExist', (req, res) => {
+  const query = 'SELECT cust_email FROM customers';
+
+  db.query(query, (err, rows) => {
+    if (err) {
+      console.error('Error fetching data from the database:', err);
+      res.status(500).send('Error fetching data from the database');
+      return;
+    }
+
+    // Convert the rows to an array of objects
+    const data = rows.map((row) => ({
+      cust_email: row.cust_email
+    }));
+
+    res.setHeader('Content-Type', 'application/json');
+    res.json(data);
+  });
+});
+
 app.post('/api/customers/checkAlignProcess', upload.fields([
   { name: 'cust_username', maxCount: 1 }, // Change the field name to 'cust_name'
 ]), async (req, res) => {

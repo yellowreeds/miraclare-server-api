@@ -1161,22 +1161,49 @@ app.post('/api/customers/changePassword', upload.fields([
     cust_email,
     cust_password,
   } = req.body;
-  
-  const sql = 'UPDATE customers set cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
-  const values = [cust_password, cust_phone_num, cust_email];
-  db.query(sql, values, (err, results) => {
-    if (err) {
-      console.error('Error executing SQL query:', err);
+
+  // First, retrieve the current password from the database
+  const getPasswordSql = 'SELECT cust_password FROM customers WHERE cust_phone_num = ? AND cust_email = ?';
+  const getPasswordValues = [cust_phone_num, cust_email];
+  db.query(getPasswordSql, getPasswordValues, async (getPasswordErr, getPasswordResults) => {
+    if (getPasswordErr) {
+      console.error('Error executing SQL query:', getPasswordErr);
       res.status(500).json({ error: 'Internal Server Error' });
     } else {
-      if (results.affectedRows === 1) {
-        res.status(200).json({ message: 'OK' });
-      } else {
+      if (getPasswordResults.length === 0) {
         res.status(404).json({ error: 'Customer not found' });
+      } else {
+        const currentPassword = getPasswordResults[0].cust_password;
+        try {
+          const isPasswordCorrect = await verifyPassword(cust_password, currentPassword);
+          if (isPasswordCorrect) {
+          const updatePasswordSql = 'UPDATE customers SET cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
+          const updatePasswordValues = [cust_password, cust_phone_num, cust_email];
+          db.query(updatePasswordSql, updatePasswordValues, (updatePasswordErr, updatePasswordResults) => {
+            if (updatePasswordErr) {
+              console.error('Error executing SQL query:', updatePasswordErr);
+              res.status(500).json({ error: 'Internal Server Error' });
+            } else {
+              if (updatePasswordResults.affectedRows === 1) {
+                res.status(200).json({ message: 'OK' });
+              } else {
+                res.status(404).json({ error: 'Customer not found' });
+              }
+            }
+          });
+          } else {
+            res.status(403).json({ error: 'New password matches the current password' });
+          }
+        } catch (error) {
+          console.error('Error verifying password:', error);
+          res.status(500).json({ error: 'Internal Server Error' });
+        }
+        
       }
     }
   });
 });
+
 
 app.post('/api/customers/requestVerificationNumber', upload.fields([
   { name: 'cust_email', maxCount: 1 },

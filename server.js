@@ -860,6 +860,7 @@ app.get('/api/customers', (req, res) => {
 app.post('/api/customers/update', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'cust_password', maxCount: 1 },
+  { name: 'cust_password_original', maxCount: 1 },
   { name: 'cust_phone_num', maxCount: 1 },
   { name: 'cust_address', maxCount: 1 },
   { name: 'cust_detail_address', maxCount: 1 }
@@ -867,43 +868,71 @@ app.post('/api/customers/update', upload.fields([
   const {
     cust_username,
     cust_password, 
+    cust_password_original, 
     cust_phone_num,
     cust_address,
     cust_detail_address,
   } = req.body;
 
-  const updateQuery = `
-    UPDATE customers SET
-    ${cust_password ? 'cust_password = ?,' : ''}
-    cust_phone_num = ?,
-    cust_address = ?,
-    cust_detail_address = ?
-    WHERE cust_username = ?
-  `;
-
-  const values = [
-    ...(cust_password ? [cust_password] : []),
-    cust_phone_num,
-    cust_address,
-    cust_detail_address,
-    cust_username,
-  ];
-
-  db.query(updateQuery, values, (updateErr, updateResult) => {
-    if (updateErr) {
-      console.error('Error executing update SQL query:', updateErr);
+  // First, retrieve the current password from the database
+  const getPasswordSql = 'SELECT cust_password FROM customers WHERE cust_username = ?';
+  const getPasswordValues = [cust_username];
+  
+  db.query(getPasswordSql, getPasswordValues, async (getPasswordErr, getPasswordResults) => {
+    if (getPasswordErr) {
+      console.error('Error executing SQL query:', getPasswordErr);
       res.status(500).json({ error: 'Internal Server Error' });
       return;
     }
 
-    if (updateResult.affectedRows === 0) {
+    if (getPasswordResults.length === 0) {
       res.status(404).json({ error: 'Customer not found' });
       return;
     }
 
-    res.status(200).json({ message: 'Customer updated successfully' });
+    const currentPassword = getPasswordResults[0].cust_password;
+    
+    try {
+      const isPasswordCorrect = await verifyPassword(cust_password_original, currentPassword);
+      if (!isPasswordCorrect) {
+        const updateQuery = `
+          UPDATE customers SET
+          ${cust_password ? 'cust_password = ?,' : ''}
+          cust_phone_num = ?,
+          cust_address = ?,
+          cust_detail_address = ?
+          WHERE cust_username = ?
+        `;
+        const values = [
+          ...(cust_password ? [cust_password] : []),
+          cust_phone_num,
+          cust_address,
+          cust_detail_address,
+          cust_username,
+        ];
+        
+        db.query(updateQuery, values, (updateErr, updateResult) => {
+          if (updateErr) {
+            console.error('Error executing update SQL query:', updateErr);
+            res.status(500).json({ error: 'Internal Server Error' });
+          } else {
+            if (updateResult.affectedRows === 0) {
+              res.status(404).json({ error: 'Customer not found' });
+            } else {
+              res.status(200).json({ message: 'Customer updated successfully' });
+            }
+          }
+        });
+      } else {
+        res.status(403).json({ error: 'New password matches the current password' });
+      }
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   });
 });
+
 
 app.post('/api/customers/register', upload.fields([
   { name: 'cust_username', maxCount: 1 },

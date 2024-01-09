@@ -1155,11 +1155,13 @@ app.post('/api/customers/changePassword', upload.fields([
   { name: 'cust_phone_num', maxCount: 1 },
   { name: 'cust_email', maxCount: 1 },
   { name: 'cust_password', maxCount: 1 },
+  { name: 'cust_password_original', maxCount: 1 },
 ]), (req, res) => {
   const {
     cust_phone_num,
     cust_email,
     cust_password,
+    cust_password_original,
   } = req.body;
 
   // First, retrieve the current password from the database
@@ -1177,25 +1179,25 @@ app.post('/api/customers/changePassword', upload.fields([
         try {
           console.log(cust_password)
           console.log(currentPassword)
-          const isPasswordCorrect = await verifyPassword(cust_password, currentPassword);
-          if (isPasswordCorrect) {
-          const updatePasswordSql = 'UPDATE customers SET cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
-          const updatePasswordValues = [cust_password, cust_phone_num, cust_email];
-          db.query(updatePasswordSql, updatePasswordValues, (updatePasswordErr, updatePasswordResults) => {
-            if (updatePasswordErr) {
-              console.error('Error executing SQL query:', updatePasswordErr);
-              res.status(500).json({ error: 'Internal Server Error' });
-            } else {
-              if (updatePasswordResults.affectedRows === 1) {
-                res.status(200).json({ message: 'OK' });
-              } else {
-                res.status(404).json({ error: 'Customer not found' });
-              }
-            }
-          });
-          } else {
-            res.status(403).json({ error: 'New password matches the current password' });
-          }
+          const isPasswordCorrect = await verifyPassword(cust_password_original, currentPassword);
+          // if (isPasswordCorrect) {
+          // const updatePasswordSql = 'UPDATE customers SET cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
+          // const updatePasswordValues = [cust_password, cust_phone_num, cust_email];
+          // db.query(updatePasswordSql, updatePasswordValues, (updatePasswordErr, updatePasswordResults) => {
+          //   if (updatePasswordErr) {
+          //     console.error('Error executing SQL query:', updatePasswordErr);
+          //     res.status(500).json({ error: 'Internal Server Error' });
+          //   } else {
+          //     if (updatePasswordResults.affectedRows === 1) {
+          //       res.status(200).json({ message: 'OK' });
+          //     } else {
+          //       res.status(404).json({ error: 'Customer not found' });
+          //     }
+          //   }
+          // });
+          // } else {
+          //   res.status(403).json({ error: 'New password matches the current password' });
+          // }
         } catch (error) {
           console.error('Error verifying password:', error);
           res.status(500).json({ error: 'Internal Server Error' });

@@ -1181,24 +1181,24 @@ app.post('/api/customers/changePassword', upload.fields([
           console.log(currentPassword);
           const isPasswordCorrect = await verifyPassword(cust_password_original, currentPassword);
           console.log(isPasswordCorrect);
-          // if (isPasswordCorrect) {
-          // const updatePasswordSql = 'UPDATE customers SET cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
-          // const updatePasswordValues = [cust_password, cust_phone_num, cust_email];
-          // db.query(updatePasswordSql, updatePasswordValues, (updatePasswordErr, updatePasswordResults) => {
-          //   if (updatePasswordErr) {
-          //     console.error('Error executing SQL query:', updatePasswordErr);
-          //     res.status(500).json({ error: 'Internal Server Error' });
-          //   } else {
-          //     if (updatePasswordResults.affectedRows === 1) {
-          //       res.status(200).json({ message: 'OK' });
-          //     } else {
-          //       res.status(404).json({ error: 'Customer not found' });
-          //     }
-          //   }
-          // });
-          // } else {
-          //   res.status(403).json({ error: 'New password matches the current password' });
-          // }
+          if (isPasswordCorrect) {
+          const updatePasswordSql = 'UPDATE customers SET cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
+          const updatePasswordValues = [cust_password, cust_phone_num, cust_email];
+          db.query(updatePasswordSql, updatePasswordValues, (updatePasswordErr, updatePasswordResults) => {
+            if (updatePasswordErr) {
+              console.error('Error executing SQL query:', updatePasswordErr);
+              res.status(500).json({ error: 'Internal Server Error' });
+            } else {
+              if (updatePasswordResults.affectedRows === 1) {
+                res.status(200).json({ message: 'OK' });
+              } else {
+                res.status(404).json({ error: 'Customer not found' });
+              }
+            }
+          });lear
+          } else {
+            res.status(403).json({ error: 'New password matches the current password' });
+          }
         } catch (error) {
           console.error('Error verifying password:', error);
           res.status(500).json({ error: 'Internal Server Error' });

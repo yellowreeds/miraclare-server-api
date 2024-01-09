@@ -1177,9 +1177,10 @@ app.post('/api/customers/changePassword', upload.fields([
       } else {
         const currentPassword = getPasswordResults[0].cust_password;
         try {
-          console.log(cust_password)
-          console.log(currentPassword)
+          console.log(cust_password_original);
+          console.log(currentPassword);
           const isPasswordCorrect = await verifyPassword(cust_password_original, currentPassword);
+          console.log(isPasswordCorrect);
           // if (isPasswordCorrect) {
           // const updatePasswordSql = 'UPDATE customers SET cust_password = ? WHERE cust_phone_num = ? AND cust_email = ?';
           // const updatePasswordValues = [cust_password, cust_phone_num, cust_email];

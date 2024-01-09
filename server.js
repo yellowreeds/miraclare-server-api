@@ -1192,7 +1192,7 @@ app.post('/api/customers/changePassword', upload.fields([
                 res.status(404).json({ error: 'Customer not found' });
               }
             }
-          });lear
+          });
           } else {
             res.status(403).json({ error: 'New password matches the current password' });
           }

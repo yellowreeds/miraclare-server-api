@@ -603,6 +603,8 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                     let totalSum = 0;
                     results3.forEach((row) => {
                       totalSum += row.sleep_br_episode || 0;
+                      console.log(totalSum)
+                      console.log(row.sleep_br_episode)
                     });
                     result.average_br_episode = totalSum / results3.length;
                   }

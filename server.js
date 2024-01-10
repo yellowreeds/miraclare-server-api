@@ -537,84 +537,108 @@ app.post('/api/customers/sleepDataResult', upload.fields([
             result.sleep_duration = latestData.sleep_duration || 0;
             result.sleep_start = latestData.sleep_start;
             result.sleep_stop = latestData.sleep_stop;
-            result.latest_data = `${yearPrefix}${latestData.sleep_analysis_year}. ${latestData.sleep_analysis_month}. ${latestData.sleep_analysis_date}`;
           }
-
-          const fromDateStart = new Date(fromDate);
-          fromDateStart.setHours(0, 0, 0, 0);
-          const toDateEnd = new Date(toDate);
-          toDateEnd.setHours(23, 59, 59, 999);
-
-          // Step 3: Get the highest sleep_emg_max for the last 7 days
+          
+          // Step 2b: Get the latest sleep_data
           db.query(
-            'SELECT MAX(sleep_br_episode) AS highest_br_episode ' +
+            'SELECT sleep_br_episode AS latest_br_episode, ' +
+            'sleep_start, sleep_stop, sleep_duration, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
             'FROM sleep_data ' +
             'WHERE cust_id = ? ' +
-            'AND sleep_analysis_year >= ? ' +
-            'AND sleep_analysis_month >= ? ' +
-            'AND sleep_analysis_date >= ? ' +
-            'AND sleep_analysis_year <= ? ' +
-            'AND sleep_analysis_month <= ? ' +
-            'AND sleep_analysis_date <= ? ' +
-            'ORDER BY sleep_br_episode DESC ' +
+            'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
+            'sleep_analysis_date DESC, sleep_analysis_day DESC, sleep_start DESC ' +
             'LIMIT 1',
-            [cust_id, fromDateStart.getFullYear() % 100, fromDateStart.getMonth() + 1, fromDateStart.getDate(), toDateEnd.getFullYear() % 100, toDateEnd.getMonth() + 1, toDateEnd.getDate()],
-            (err, results2) => {
+            [cust_id],
+            (err, results25) => {
               if (err) {
-                console.error('Error retrieving highest sleep_emg_max:', err);
+                console.error('Error retrieving latest sleep_br_episode:', err);
                 return res.status(500).json({ error: 'Error retrieving data' });
               }
-          
-              result.highest_br_max = results2[0]?.highest_br_episode || 0;
-          
-              // Step 4: Get every sleep_br_episode data for the specified date range and sum them
-          
+
+              const latestSleepData = results25[0] || null;
+              if (latestSleepData) {
+                const fullYear = new Date().getFullYear();
+                const yearPrefix = fullYear.toString().substring(0, 2); // Extract the first two digits of the current year
+                result.latest_data = `${yearPrefix}${latestSleepData.sleep_analysis_year}. ${latestSleepData.sleep_analysis_month}. ${latestSleepData.sleep_analysis_date}`;
+              }
+
+              const fromDateStart = new Date(fromDate);
+              fromDateStart.setHours(0, 0, 0, 0);
+              const toDateEnd = new Date(toDate);
+              toDateEnd.setHours(23, 59, 59, 999);
+
+              // Step 3: Get the highest sleep_emg_max for the last 7 days
               db.query(
-                'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
+                'SELECT MAX(sleep_br_episode) AS highest_br_episode ' +
                 'FROM sleep_data ' +
                 'WHERE cust_id = ? ' +
-                'AND (' +
-                '(sleep_analysis_year = ? AND sleep_analysis_month = ? AND sleep_analysis_date >= ?) ' +
-                'OR (sleep_analysis_year = ? AND sleep_analysis_month = ? AND sleep_analysis_date <= ?) ' +
-                ') ' +
-                'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, sleep_analysis_date DESC',
-                [
-                  cust_id,
-                  (fromDateStart.getFullYear() % 100).toString(),
-                  (fromDateStart.getMonth() + 1).toString().padStart(2, '0'),
-                  fromDateStart.getDate().toString().padStart(2, '0'),
-                  (toDateEnd.getFullYear() % 100).toString(),
-                  (toDateEnd.getMonth() + 1).toString().padStart(2, '0'),
-                  toDateEnd.getDate().toString().padStart(2, '0')
-                ],
-                (err, results3) => {
+                'AND sleep_analysis_year >= ? ' +
+                'AND sleep_analysis_month >= ? ' +
+                'AND sleep_analysis_date >= ? ' +
+                'AND sleep_analysis_year <= ? ' +
+                'AND sleep_analysis_month <= ? ' +
+                'AND sleep_analysis_date <= ? ' +
+                'ORDER BY sleep_br_episode DESC ' +
+                'LIMIT 1',
+                [cust_id, fromDateStart.getFullYear() % 100, fromDateStart.getMonth() + 1, fromDateStart.getDate(), toDateEnd.getFullYear() % 100, toDateEnd.getMonth() + 1, toDateEnd.getDate()],
+                (err, results2) => {
                   if (err) {
-                    console.error('Error retrieving sleep_br_episode data:', err);
+                    console.error('Error retrieving highest sleep_emg_max:', err);
                     return res.status(500).json({ error: 'Error retrieving data' });
                   }
-          
-                  const brData = {};
-          
-                  results3.forEach((row) => {
-                    const dateKey = `${row.sleep_analysis_year}.${row.sleep_analysis_month}.${row.sleep_analysis_date}`;
-                    if (!brData[dateKey]) {
-                      brData[dateKey] = 0;
+              
+                  result.highest_br_max = results2[0]?.highest_br_episode || 0;
+              
+                  // Step 4: Get every sleep_br_episode data for the specified date range and sum them
+              
+                  db.query(
+                    'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
+                    'FROM sleep_data ' +
+                    'WHERE cust_id = ? ' +
+                    'AND (' +
+                    '(sleep_analysis_year = ? AND sleep_analysis_month = ? AND sleep_analysis_date >= ?) ' +
+                    'OR (sleep_analysis_year = ? AND sleep_analysis_month = ? AND sleep_analysis_date <= ?) ' +
+                    ') ' +
+                    'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, sleep_analysis_date DESC',
+                    [
+                      cust_id,
+                      (fromDateStart.getFullYear() % 100).toString(),
+                      (fromDateStart.getMonth() + 1).toString().padStart(2, '0'),
+                      fromDateStart.getDate().toString().padStart(2, '0'),
+                      (toDateEnd.getFullYear() % 100).toString(),
+                      (toDateEnd.getMonth() + 1).toString().padStart(2, '0'),
+                      toDateEnd.getDate().toString().padStart(2, '0')
+                    ],
+                    (err, results3) => {
+                      if (err) {
+                        console.error('Error retrieving sleep_br_episode data:', err);
+                        return res.status(500).json({ error: 'Error retrieving data' });
+                      }
+              
+                      const brData = {};
+              
+                      results3.forEach((row) => {
+                        const dateKey = `${row.sleep_analysis_year}.${row.sleep_analysis_month}.${row.sleep_analysis_date}`;
+                        if (!brData[dateKey]) {
+                          brData[dateKey] = 0;
+                        }
+                        brData[dateKey] += row.sleep_br_episode;
+                      });
+              
+                      result.br_data = brData;
+              
+                      // Step 5: Calculate the average
+                      if (Object.keys(brData).length > 0) {
+                        let totalSum = 0;
+                        Object.keys(brData).forEach((key) => {
+                          totalSum += brData[key] || 0;
+                        });
+                        result.average_br_episode = totalSum / Object.keys(brData).length;
+                      }                  
+              
+                      res.status(200).json(result);
                     }
-                    brData[dateKey] += row.sleep_br_episode;
-                  });
-          
-                  result.br_data = brData;
-          
-                  // Step 5: Calculate the average
-                  if (Object.keys(brData).length > 0) {
-                    let totalSum = 0;
-                    Object.keys(brData).forEach((key) => {
-                      totalSum += brData[key] || 0;
-                    });
-                    result.average_br_episode = totalSum / Object.keys(brData).length;
-                  }                  
-          
-                  res.status(200).json(result);
+                  );
                 }
               );
             }
@@ -624,6 +648,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
     }
   );
 });
+
 
 app.post('/api/customers/logout', upload.fields([
   { name: 'cust_username', maxCount: 1 },

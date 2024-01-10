@@ -530,9 +530,8 @@ app.post('/api/customers/sleepDataResult', upload.fields([
           }
 
           const latestData = results1[0] || null;
+          console.log(latestData.sleep_start == null);
           if (latestData) {
-            const fullYear = new Date().getFullYear();
-            const yearPrefix = fullYear.toString().substring(0, 2); // Extract the first two digits of the current year
             result.latest_br_episode = latestData.latest_br_episode || 0;
             result.sleep_duration = latestData.sleep_duration || 0;
             result.sleep_start = latestData.sleep_start;

@@ -530,7 +530,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
           }
 
           const latestData = results1[0] || null;
-          console.log(latestData.sleep_start == null);
+          console.log(latestData.sleep_start);
           if (latestData) {
             result.latest_br_episode = latestData.latest_br_episode || 0;
             result.sleep_duration = latestData.sleep_duration || 0;

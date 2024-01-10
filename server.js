@@ -600,28 +600,12 @@ app.post('/api/customers/sleepDataResult', upload.fields([
           
                   // Step 5: Calculate the average
                   if (results3.length > 0) {
-                    const dailyTotalSum = {};
-                    const dailyCount = {};
-                  
+                    let totalSum = 0;
                     results3.forEach((row) => {
-                      const dateKey = `${row.sleep_analysis_year}-${row.sleep_analysis_month}-${row.sleep_analysis_date}`;
-                  
-                      if (!dailyTotalSum[dateKey]) {
-                        dailyTotalSum[dateKey] = 0;
-                        dailyCount[dateKey] = 0;
-                      }
-                  
-                      dailyTotalSum[dateKey] += row.sleep_br_episode || 0;
-                      dailyCount[dateKey]++;
+                      totalSum += row.sleep_br_episode || 0;
+
                     });
-                  
-                    const dailyAverages = {};
-                  
-                    for (const dateKey in dailyTotalSum) {
-                      dailyAverages[dateKey] = dailyTotalSum[dateKey] / dailyCount[dateKey];
-                    }
-                  
-                    result.daily_average_br_episode = dailyAverages;
+                    result.average_br_episode = totalSum / results3.length;
                   }
           
                   res.status(200).json(result);

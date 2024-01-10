@@ -532,7 +532,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
           const latestData = results1[0] || null;
           if (latestData) {
             result.latest_br_episode = latestData.latest_br_episode || 0;
-            result.sleep_duration = 'sleep_duration' in latestData ? latestData.sleep_duration : 0;
+            result.sleep_duration = typeof latestData.sleep_duration !== 'undefined' ? latestData.sleep_duration : 0;
             result.sleep_start = latestData.sleep_start;
             result.sleep_stop = latestData.sleep_stop;
           }

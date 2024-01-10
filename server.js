@@ -599,6 +599,7 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                   result.br_data = brData;
           
                   // Step 5: Calculate the average
+                  console.log(brData.length);
                   if (brData.length > 0) {
                     let totalSum = 0;
                     brData.forEach((row) => {

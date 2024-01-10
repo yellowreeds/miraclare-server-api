@@ -599,15 +599,13 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                   result.br_data = brData;
           
                   // Step 5: Calculate the average
-                  console.log(Object.keys(brData).length);
-                  if (brData.length > 0) {
+                  if (Object.keys(brData).length > 0) {
                     let totalSum = 0;
-                    brData.forEach((row) => {
-                      totalSum += row.sleep_br_episode || 0;
-
+                    Object.keys(brData).forEach((key) => {
+                      totalSum += brData[key] || 0;
                     });
-                    result.average_br_episode = totalSum / brData.length;
-                  }
+                    result.average_br_episode = totalSum / Object.keys(brData).length;
+                  }                  
           
                   res.status(200).json(result);
                 }

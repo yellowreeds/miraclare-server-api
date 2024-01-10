@@ -473,7 +473,7 @@ app.post('/api/sleepDataProcess', upload.fields([
 app.post('/api/customers/sleepDataResult', upload.fields([
   { name: 'cust_username', maxCount: 1 },
   { name: 'fromDate', maxCount: 1 },
-  { name: 'todate', maxCount: 1 },
+  { name: 'to_date', maxCount: 1 },
 ]), (req, res) => {
   const { cust_username, fromDate, toDate } = req.body;
 
@@ -507,22 +507,15 @@ app.post('/api/customers/sleepDataResult', upload.fields([
       }
 
       // Step 2: Get the latest sleep_br_episode
-      const toDateEndLatestBR = new Date(toDate);
-      toDateEndLatestBR.setHours(23, 59, 59, 999);
       db.query(
         'SELECT sleep_br_episode AS latest_br_episode, ' +
         'sleep_start, sleep_stop, sleep_duration, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
         'FROM sleep_data ' +
         'WHERE cust_id = ? ' +
-        'AND sleep_analysis_year = ? ' +
-        'AND sleep_analysis_month = ? ' +
-        'AND sleep_analysis_date = ? ' +
         'ORDER BY sleep_analysis_year DESC, sleep_analysis_month DESC, ' +
         'sleep_analysis_date DESC, sleep_analysis_day DESC, sleep_start DESC ' +
         'LIMIT 1',
-        [cust_id, (toDateEndLatestBR.getFullYear() % 100).toString(),
-          (toDateEndLatestBR.getMonth() + 1).toString().padStart(2, '0'),
-          toDateEndLatestBR.getDate().toString().padStart(2, '0')],
+        [cust_id],
         (err, results1) => {
           if (err) {
             console.error('Error retrieving latest sleep_br_episode:', err);

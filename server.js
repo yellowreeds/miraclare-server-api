@@ -588,7 +588,6 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                   result.highest_br_max = results2[0]?.highest_br_episode || 0;
               
                   // Step 4: Get every sleep_br_episode data for the specified date range and sum them
-              
                   db.query(
                     'SELECT sleep_br_episode, sleep_analysis_year, sleep_analysis_month, sleep_analysis_date ' +
                     'FROM sleep_data ' +
@@ -614,6 +613,13 @@ app.post('/api/customers/sleepDataResult', upload.fields([
                       }
               
                       const brData = {};
+
+                      console.log((fromDateStart.getFullYear() % 100).toString(),
+                      (fromDateStart.getMonth() + 1).toString().padStart(2, '0'),
+                      fromDateStart.getDate().toString().padStart(2, '0'),
+                      (toDateEnd.getFullYear() % 100).toString(),
+                      (toDateEnd.getMonth() + 1).toString().padStart(2, '0'),
+                      toDateEnd.getDate().toString().padStart(2, '0'));
               
                       results3.forEach((row) => {
                         const dateKey = `${row.sleep_analysis_year}.${row.sleep_analysis_month}.${row.sleep_analysis_date}`;
